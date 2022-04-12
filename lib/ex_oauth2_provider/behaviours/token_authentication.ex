@@ -1,4 +1,4 @@
-defmodule ExOauth2Provider.Behaviors.TokenAuthentication do
+defmodule ExOauth2Provider.Behaviours.TokenAuthentication do
   @moduledoc """
   Simple behavior for defining a custom token authentication strategy.
   """
