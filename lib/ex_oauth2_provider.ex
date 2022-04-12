@@ -34,7 +34,7 @@ defmodule ExOauth2Provider do
   expire.
   """
 
-  @behaviour ExOauth2Provider.Behaviors.TokenAuthentication
+  @behaviour ExOauth2Provider.Behaviours.TokenAuthentication
 
   alias ExOauth2Provider.{Config, AccessTokens}
 
@@ -50,7 +50,7 @@ defmodule ExOauth2Provider do
       {:ok, access_token}
       {:error, reason}
   """
-  @impl ExOauth2Provider.Behaviors.TokenAuthentication
+  @impl ExOauth2Provider.Behaviours.TokenAuthentication
   def authenticate_token(token, config \\ [])
   def authenticate_token(nil, _config), do: {:error, :token_inaccessible}
 
