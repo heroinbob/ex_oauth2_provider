@@ -24,12 +24,12 @@ defmodule ExOauth2Provider.AccessTokens.AccessToken do
   @doc false
   def attrs() do
     [
-      {:token, :string, null: false},
+      {:token, :string},
       {:refresh_token, :string},
       {:expires_in, :integer},
       {:revoked_at, :utc_datetime},
       {:scopes, :string},
-      {:previous_refresh_token, :string, null: false, default: ""}
+      {:previous_refresh_token, :string, default: ""}
     ]
   end
 
@@ -130,7 +130,7 @@ defmodule ExOauth2Provider.AccessTokens.AccessToken do
     opts = Keyword.put(opts, :resource_owner_id, resource_owner_id(opts[:resource_owner]))
 
     case Config.access_token_generator(config) do
-      nil              -> Utils.generate_token(opts)
+      nil -> Utils.generate_token(opts)
       {module, method} -> apply(module, method, [opts])
     end
   end
@@ -139,6 +139,7 @@ defmodule ExOauth2Provider.AccessTokens.AccessToken do
   defp resource_owner_id(_), do: nil
 
   defp put_previous_refresh_token(changeset, nil), do: changeset
+
   defp put_previous_refresh_token(changeset, refresh_token),
     do: Changeset.change(changeset, %{previous_refresh_token: refresh_token.refresh_token})
 
@@ -147,5 +148,6 @@ defmodule ExOauth2Provider.AccessTokens.AccessToken do
     |> Changeset.change(%{refresh_token: Utils.generate_token()})
     |> Changeset.validate_required([:refresh_token])
   end
+
   defp put_refresh_token(changeset, _), do: changeset
 end
