@@ -23,8 +23,8 @@ defmodule ExOauth2Provider.DeviceGrants.DeviceGrant do
   @doc false
   def attrs() do
     [
-      {:device_code, :string},
-      {:expires_in, :integer},
+      {:device_code, :string, null: false},
+      {:expires_in, :integer, null: false},
       {:last_polled_at, :utc_datetime},
       {:scopes, :string},
       {:user_code, :string}

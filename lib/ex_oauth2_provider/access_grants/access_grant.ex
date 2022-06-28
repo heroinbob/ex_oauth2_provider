@@ -23,9 +23,9 @@ defmodule ExOauth2Provider.AccessGrants.AccessGrant do
   @doc false
   def attrs() do
     [
-      {:token, :string},
-      {:expires_in, :integer},
-      {:redirect_uri, :string},
+      {:token, :string, null: false},
+      {:expires_in, :integer, null: false},
+      {:redirect_uri, :string, null: false},
       {:revoked_at, :utc_datetime},
       {:scopes, :string}
     ]
@@ -42,7 +42,7 @@ defmodule ExOauth2Provider.AccessGrants.AccessGrant do
   @doc false
   def indexes() do
     [
-      {:token, true}
+      {:token, true},
     ]
   end
 
@@ -72,13 +72,7 @@ defmodule ExOauth2Provider.AccessGrants.AccessGrant do
     |> put_token()
     |> Scopes.put_scopes(grant.application.scopes, config)
     |> Scopes.validate_scopes(grant.application.scopes, config)
-    |> Changeset.validate_required([
-      :redirect_uri,
-      :expires_in,
-      :token,
-      :resource_owner,
-      :application
-    ])
+    |> Changeset.validate_required([:redirect_uri, :expires_in, :token, :resource_owner, :application])
     |> Changeset.unique_constraint(:token)
   end
 

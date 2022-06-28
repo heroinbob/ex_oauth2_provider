@@ -49,9 +49,7 @@ defmodule Mix.Tasks.ExOauth2Provider.Gen.MigrationTest do
 
       # TODO: this could be improved by testing each table indpendently and
       # completely.
-      # NOTE: This used to have `null: false` but on update to Ecto 3.8.x fields
-      # started checking the given options which doesn't support null.
-      assert file =~ "add :is_trusted, :boolean, default: false"
+      assert file =~ "add :is_trusted, :boolean, default: false, null: false"
     end)
   end
 
@@ -92,15 +90,11 @@ defmodule Mix.Tasks.ExOauth2Provider.Gen.MigrationTest do
       assert file =~ ":oauth_access_grants"
       assert file =~ ":oauth_access_tokens"
 
-      # NOTE: Update to Ecto 3.8.x caused the need to remove `null` as an option
-      # in the schema because Ecto.Schema.field does not support it as an option.
-      # This is dependent on that so there must be some other way to define the
-      # db migration options.
       create_table_content =
         [
           "    create table(:oauth_device_grants) do",
-          "      add :device_code, :string",
-          "      add :expires_in, :integer",
+          "      add :device_code, :string, null: false",
+          "      add :expires_in, :integer, null: false",
           "      add :last_polled_at, :utc_datetime",
           "      add :scopes, :string",
           "      add :user_code, :string",
