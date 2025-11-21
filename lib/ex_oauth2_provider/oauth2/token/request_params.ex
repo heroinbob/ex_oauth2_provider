@@ -21,12 +21,10 @@ defmodule ExOauth2Provider.Token.AuthorizationCode.RequestParams do
     (is_required and PKCE.valid?(context)) or not is_required
   end
 
-  defp valid_redirect_uri?(
-         %{
-           request: %{"redirect_uri" => redirect_uri},
-           access_grant: grant
-         } = context
-       ) do
+  defp valid_redirect_uri?(%{
+         request: %{"redirect_uri" => redirect_uri},
+         access_grant: grant
+       }) do
     grant.redirect_uri == redirect_uri
   end
 

@@ -55,8 +55,6 @@ defmodule ExOauth2Provider.Authorization.Code do
   end
   ```
   """
-  alias Mix.Tasks.Format
-
   alias ExOauth2Provider.{
     Config,
     AccessTokens,
@@ -64,8 +62,6 @@ defmodule ExOauth2Provider.Authorization.Code do
     Authorization.Code.RequestParams,
     Authorization.Utils,
     Authorization.Utils.Response,
-    RedirectURI,
-    Scopes,
     Utils.Error
   }
 
