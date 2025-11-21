@@ -27,7 +27,7 @@ defmodule ExOauth2Provider.AccessGrants.AccessGrant do
   request or endpoint basis.
   """
 
-  alias ExOauth2Provider.Authorization.PKCE
+  alias ExOauth2Provider.PKCE
 
   @type t :: Ecto.Schema.t()
 

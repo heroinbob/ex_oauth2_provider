@@ -3,8 +3,8 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParams do
   Logic for working with authorization code request params.
   """
   alias ExOauth2Provider.{
-    Authorization.PKCE,
     Config,
+    PKCE,
     RedirectURI,
     Scopes
   }
