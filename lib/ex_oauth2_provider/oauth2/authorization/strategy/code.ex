@@ -183,14 +183,12 @@ defmodule ExOauth2Provider.Authorization.Code do
          config
        ) do
     grant_params = RequestParams.to_access_grant_params(request, config)
-    IO.inspect({config, request, grant_params}, label: "ISSUE GRANT")
 
     case AccessGrants.create_grant(resource_owner, application, grant_params, config) do
       {:ok, grant} ->
         {:ok, Map.put(params, :grant, grant)}
 
       {:error, error} ->
-        IO.inspect(error, label: "Failed to create grant")
         Error.add_error({:ok, params}, error)
     end
   end

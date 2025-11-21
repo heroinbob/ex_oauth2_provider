@@ -141,12 +141,11 @@ defmodule ExOauth2Provider.Authorization.CodeTest do
       resource_owner: resource_owner,
       application: application
     } do
-      x =
-        Fixtures.access_token(
-          resource_owner: resource_owner,
-          application: application,
-          scopes: @valid_request["scope"]
-        )
+      Fixtures.access_token(
+        resource_owner: resource_owner,
+        application: application,
+        scopes: @valid_request["scope"]
+      )
 
       assert {:native_redirect, %{code: code}} =
                Authorization.preauthorize(
@@ -157,7 +156,6 @@ defmodule ExOauth2Provider.Authorization.CodeTest do
 
       access_grant = QueryHelpers.get_latest_inserted(OauthAccessGrant)
 
-      IO.inspect({x, code}, label: "TEST")
       assert code == access_grant.token
     end
   end
