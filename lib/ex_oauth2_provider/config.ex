@@ -107,6 +107,17 @@ defmodule ExOauth2Provider.Config do
   def use_refresh_token?(config),
     do: get(config, :use_refresh_token, false)
 
+  @doc """
+  Returns true if PKCE is configured for the given config. You must require
+  and validate PKCE data during the authorization code flow.
+
+  To enable, include `use_pkce: true` in the config for your app.
+  """
+  @spec use_pkce?(keyword()) :: boolean()
+  def use_pkce?(config) do
+    get(config, :use_pkce, false) == true
+  end
+
   # Password auth method to use. Disabled by default. When set, it'll enable
   # password auth strategy. Set config as:
   # `password_auth: {MyModule, :my_auth_method}`

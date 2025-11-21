@@ -11,11 +11,27 @@ defmodule ExOauth2Provider.Authorization do
 
   alias Ecto.Schema
 
+  # TODO: This should be a struct
+  @type context :: %{
+          client: map(),
+          request: map(),
+          resource_owner: map()
+        }
+
   @doc """
   Check ExOauth2Provider.Authorization.Code for usage.
 
   NOTE: the first argument is allowed to be nil because device authorization
   does not have a user, there is no session.
+
+  ## Config
+
+  The config is a list of various additional parameters.
+
+  - `:otp_app` - Required. The name of the app to pull config data for.
+  - `:with`    - Optional. This can be a single value or a list of things that
+                 should be included. The only supported value today is `:pkce`
+                 to require PKCE be used.
   """
   @spec preauthorize(Schema.t() | nil, map(), keyword()) ::
           Response.preauthorization_success()
@@ -23,7 +39,7 @@ defmodule ExOauth2Provider.Authorization do
           | Response.error()
           | Response.redirect()
           | Response.native_redirect()
-  def preauthorize(resource_owner, request, config \\ []) do
+  def preauthorize(resource_owner, request, config) when is_map(request) and is_list(config) do
     case validate_response_type(request, config) do
       {:error, :invalid_response_type} ->
         unsupported_response_type(resource_owner, request, config)
@@ -37,14 +53,15 @@ defmodule ExOauth2Provider.Authorization do
   end
 
   @doc """
-  Authorize access for a device. See #preauthorize/3 for more details.
+  Preauthorize access for a device. See ExOauth2Provider.DeviceAuthorization and
+  #preauthorize/3 for more details.
   """
   @spec preauthorize_device(map(), keyword()) ::
           Response.device_preauthorization_success()
           | Response.error()
           | Response.redirect()
           | Response.native_redirect()
-  def preauthorize_device(request, config \\ []) do
+  def preauthorize_device(request, config) when is_map(request) and is_list(config) do
     # This wraps preauthorize but since there's no user or response type
     # in these requests we can pass what's needed.
     request = Map.put(request, "response_type", "device_code")
