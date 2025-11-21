@@ -1,9 +1,18 @@
 defmodule ExOauth2Provider.Token.Strategy.AuthorizationCodeTest do
   use ExOauth2Provider.TestCase
 
-  alias Dummy.{OauthAccessGrants, Repo}
-  alias Dummy.OauthAccessTokens.OauthAccessToken
-  alias ExOauth2Provider.{Config, Token, Token.AuthorizationCode, AccessGrants}
+  alias Dummy.{
+    OauthAccessTokens.OauthAccessToken,
+    Repo
+  }
+
+  alias ExOauth2Provider.{
+    Config,
+    Token,
+    Token.AuthorizationCode,
+    AccessGrants
+  }
+
   alias ExOauth2Provider.Test.{Fixtures, PKCE, QueryHelpers}
 
   @client_id "Jf5rM8hQBc"
@@ -184,11 +193,7 @@ defmodule ExOauth2Provider.Token.Strategy.AuthorizationCodeTest do
   end
 
   describe "grant/3 when PKCE is enabled" do
-    test "validates the PKCE info and returns the grant", %{
-      resource_owner: resource_owner,
-      application: application,
-      access_grant: access_grant
-    } do
+    test "validates the PKCE info and returns the grant", %{access_grant: access_grant} do
       verifier = PKCE.generate_code_verifier()
       challenge = PKCE.generate_code_challenge(verifier, :s256)
 
@@ -197,23 +202,18 @@ defmodule ExOauth2Provider.Token.Strategy.AuthorizationCodeTest do
       request = Map.put(@valid_request, "code_verifier", verifier)
 
       # Store the challenge on the grant so we can compare.
-      access_grant =
-        access_grant
-        |> Ecto.Changeset.cast(
-          %{code_challenge: challenge, code_challenge_method: "S256"},
-          [:code_challenge, :code_challenge_method]
-        )
-        |> Repo.update!()
+      access_grant
+      |> Ecto.Changeset.cast(
+        %{code_challenge: challenge, code_challenge_method: "S256"},
+        [:code_challenge, :code_challenge_method]
+      )
+      |> Repo.update!()
 
-      assert {:ok, %{access_token: _} = body} =
+      assert {:ok, %{access_token: _}} =
                Token.grant(request, otp_app: :ex_oauth2_provider, use_pkce: true)
     end
 
-    test "returns an error when the PKCE info is invalid", %{
-      resource_owner: resource_owner,
-      application: application,
-      access_grant: access_grant
-    } do
+    test "returns an error when the PKCE info is invalid" do
       verifier = PKCE.generate_code_verifier()
 
       request = Map.put(@valid_request, "code_verifier", verifier)

@@ -158,7 +158,7 @@ defmodule ExOauth2Provider.AuthorizationTest do
         )
     end
 
-    test "supports the PKCE option", %{application: app, resource_owner: owner} do
+    test "supports the PKCE option", %{resource_owner: owner} do
       code_challenge = PKCE.generate_code_challenge()
 
       request =
