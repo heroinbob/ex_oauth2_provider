@@ -6,8 +6,7 @@ defmodule ExOauth2Provider.Token.AuthorizationCode do
     AccessGrants,
     AccessTokens,
     Config,
-    PKCE,
-    Token.RequestParams,
+    Token.AuthorizationCode.RequestParams,
     Token.Utils,
     Token.Utils.Response,
     Utils.Error
@@ -49,7 +48,7 @@ defmodule ExOauth2Provider.Token.AuthorizationCode do
   defp validate_request_params({:error, _} = error, _config), do: error
 
   defp validate_request_params({:ok, context}, config) do
-    if RequestParams.validate(context, config) == :ok do
+    if RequestParams.valid?(context, config) do
       {:ok, context}
     else
       # RFC states you must return an invalid grant error.
