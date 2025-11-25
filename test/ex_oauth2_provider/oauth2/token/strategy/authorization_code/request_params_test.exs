@@ -24,7 +24,7 @@ defmodule ExOauth2Provider.Token.AuthorizationCode.RequestParamsTest do
                %{
                  access_grant: %OauthAccessGrant{
                    code_challenge: challenge,
-                   code_challenge_method: "S256",
+                   code_challenge_method: :s256,
                    redirect_uri: "test"
                  },
                  request: %{

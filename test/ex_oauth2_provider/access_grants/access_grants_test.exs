@@ -133,7 +133,7 @@ defmodule ExOauth2Provider.AccessGrantsTest do
                )
 
       assert grant.code_challenge == challenge
-      assert grant.code_challenge_method == "S256"
+      assert grant.code_challenge_method == :s256
 
       assert {:error, changeset} =
                AccessGrants.create_grant(

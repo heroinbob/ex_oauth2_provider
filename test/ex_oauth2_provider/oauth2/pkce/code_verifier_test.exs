@@ -38,13 +38,13 @@ defmodule ExOauth2Provider.PKCE.CodeVerifierTest do
     test "returns true for a valid verifier" do
       verifier = PKCE.generate_code_verifier()
 
-      assert CodeVerifier.valid?(verifier, verifier, "plain") == true
+      assert CodeVerifier.valid?(verifier, verifier, :plain) == true
     end
 
     test "returns false when they aren't identical" do
       verifier = PKCE.generate_code_verifier()
 
-      assert CodeVerifier.valid?(verifier, "abc", "plain") == false
+      assert CodeVerifier.valid?(verifier, "abc", :plain) == false
     end
   end
 
@@ -53,7 +53,7 @@ defmodule ExOauth2Provider.PKCE.CodeVerifierTest do
       verifier = PKCE.generate_code_verifier()
       challenge = PKCE.generate_code_challenge(verifier, :s256)
 
-      assert CodeVerifier.valid?(verifier, challenge, "S256") == true
+      assert CodeVerifier.valid?(verifier, challenge, :s256) == true
     end
 
     test "returns false for an invalid verifier" do
@@ -62,7 +62,16 @@ defmodule ExOauth2Provider.PKCE.CodeVerifierTest do
       # This challenge is based on another verifier.
       challenge = PKCE.generate_code_challenge(%{method: :s256})
 
-      assert CodeVerifier.valid?(verifier, challenge, "S256") == false
+      assert CodeVerifier.valid?(verifier, challenge, :s256) == false
+    end
+  end
+
+  describe "valid?/2 when challenge method is unsupported" do
+    test "returns false" do
+      verifier = PKCE.generate_code_verifier()
+      challenge = PKCE.generate_code_challenge(verifier, :s256)
+
+      assert CodeVerifier.valid?(verifier, challenge, :unknown) == false
     end
   end
 end

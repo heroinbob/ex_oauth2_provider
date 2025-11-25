@@ -35,7 +35,7 @@ defmodule ExOauth2Provider.AccessGrants.AccessGrant do
   def attrs() do
     [
       {:code_challenge, :string},
-      {:code_challenge_method, :string},
+      {:code_challenge_method, Ecto.Enum, [values: [:plain, :s256]]},
       {:expires_in, :integer, null: false},
       {:redirect_uri, :string, null: false},
       {:revoked_at, :utc_datetime},
@@ -80,6 +80,7 @@ defmodule ExOauth2Provider.AccessGrants.AccessGrant do
   def changeset(grant, params, config) do
     castable = castable_attrs(config)
     required = required_attrs(config)
+    params = coerce_params(params)
 
     grant
     |> Changeset.cast(params, castable)
@@ -96,6 +97,12 @@ defmodule ExOauth2Provider.AccessGrants.AccessGrant do
   def put_token(changeset) do
     Changeset.put_change(changeset, :token, Utils.generate_token())
   end
+
+  defp coerce_params(%{code_challenge_method: method} = params) do
+    %{params | code_challenge_method: String.downcase(method)}
+  end
+
+  defp coerce_params(params), do: params
 
   defp castable_attrs(config) do
     castable = [

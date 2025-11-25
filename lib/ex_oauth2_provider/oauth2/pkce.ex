@@ -8,6 +8,11 @@ defmodule ExOauth2Provider.PKCE do
     PKCE.CodeVerifier
   }
 
+  @method_lookup %{
+    "plain" => :plain,
+    "S256" => :s256
+  }
+
   @doc """
   Returns true if PKCE is required. This function requires a list with `:otp_app`
   defined because it checks the config for the app.
@@ -27,30 +32,64 @@ defmodule ExOauth2Provider.PKCE do
   @doc """
   Validate that the request has the correct code challenge.
   """
-  def valid?(%{"code_challenge" => challenge} = request) do
+  @spec valid?(context_or_request_params :: map()) :: boolean()
+  @spec valid?(context_or_request_params :: map(), config :: list()) :: boolean()
+  def valid?(context_or_request, config \\ [])
+
+  def valid?(%{"code_challenge" => challenge} = request, config) when is_list(config) do
     method = Map.get(request, "code_challenge_method", "plain")
 
     # We only need to check the format during the authorization phase.
-    CodeChallenge.valid?(challenge, method)
+    method_allowed?(method, config[:allow]) and CodeChallenge.valid?(challenge, method)
   end
 
   # This supports the grant access token step. It accepts the entire context.
-  def valid?(%{access_grant: %{code_challenge: nil}}) do
+  def valid?(%{access_grant: %{code_challenge: nil}}, _config) do
     # A grant was passed in without any PKCE info. This is not valid.
     false
   end
 
-  def valid?(%{
-        access_grant: %{
-          code_challenge: expected_value,
-          code_challenge_method: method
+  def valid?(
+        %{
+          access_grant: %{
+            code_challenge: expected_value,
+            code_challenge_method: method
+          },
+          request: %{
+            "code_verifier" => verifier
+          }
         },
-        request: %{
-          "code_verifier" => verifier
-        }
-      }) do
-    CodeVerifier.valid?(verifier, expected_value, method)
+        config
+      ) do
+    method_allowed?(method, config[:allow]) and
+      CodeVerifier.valid?(verifier, expected_value, method)
   end
 
-  def valid?(_invalid_request), do: false
+  def valid?(_invalid_request, _config), do: false
+
+  # Challenge payloads have a string method. Normalize it to make checking easy.
+  defp method_allowed?(method, allow) when is_binary(method) do
+    @method_lookup
+    |> Map.get(method, :unsupported)
+    |> method_allowed?(allow)
+  end
+
+  defp method_allowed?(:plain, allow) when allow in [:plain, nil] do
+    true
+  end
+
+  defp method_allowed?(:s256, allow) when allow in [:s256, nil] do
+    true
+  end
+
+  defp method_allowed?(:plain, allow) when is_list(allow) do
+    :plain in allow
+  end
+
+  defp method_allowed?(:s256, allow) when is_list(allow) do
+    :s256 in allow
+  end
+
+  # There is either an unsupported method or allow is incorrect.
+  defp method_allowed?(_method, _allow), do: false
 end

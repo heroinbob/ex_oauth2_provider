@@ -204,7 +204,7 @@ defmodule ExOauth2Provider.Token.Strategy.AuthorizationCodeTest do
       # Store the challenge on the grant so we can compare.
       access_grant
       |> Ecto.Changeset.cast(
-        %{code_challenge: challenge, code_challenge_method: "S256"},
+        %{code_challenge: challenge, code_challenge_method: :s256},
         [:code_challenge, :code_challenge_method]
       )
       |> Repo.update!()

@@ -22,6 +22,7 @@ defmodule ExOauth2Provider.Schema do
         :skip_default_validation,
         :source,
         :type,
+        :values,
         :virtual,
         :where
       ]

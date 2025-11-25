@@ -391,7 +391,7 @@ defmodule ExOauth2Provider.Authorization.CodeTest do
 
       access_grant = Repo.get_by(OauthAccessGrant, token: code)
       assert access_grant.code_challenge == challenge
-      assert access_grant.code_challenge_method == "S256"
+      assert access_grant.code_challenge_method == :s256
     end
 
     test "returns error when PKCE validation fails", %{resource_owner: resource_owner} do

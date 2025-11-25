@@ -1,7 +1,5 @@
 defmodule ExOauth2Provider.PKCE.CodeVerifier do
   @code_verifier_regex ~r/^[[:alnum:]._~-]{43,128}$/
-  @plain_method "plain"
-  @sha_method "S256"
 
   @doc """
   Returs true if the verifier has a valid format per RFC.
@@ -28,16 +26,19 @@ defmodule ExOauth2Provider.PKCE.CodeVerifier do
   @spec valid?(
           verifier :: String.t(),
           challenge :: String.t(),
-          method :: String.t()
+          method :: :plain | :s256
         ) :: boolean()
-  def valid?(verifier, challenge, @plain_method) do
+  def valid?(verifier, challenge, :plain) do
     Plug.Crypto.secure_compare(verifier, challenge)
   end
 
-  def valid?(verifier, challenge, @sha_method) do
+  def valid?(verifier, challenge, :s256) do
     :sha256
     |> :crypto.hash(verifier)
     |> Base.url_encode64(padding: false)
     |> Plug.Crypto.secure_compare(challenge)
   end
+
+  # Method is not supported.
+  def valid?(_verifier, _challenge, _method), do: false
 end
