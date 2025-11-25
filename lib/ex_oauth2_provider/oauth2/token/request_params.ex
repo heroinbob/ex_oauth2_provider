@@ -10,9 +10,8 @@ defmodule ExOauth2Provider.Token.AuthorizationCode.RequestParams do
   """
   @spec valid?(context :: AuthorizationCode.context(), config :: list()) :: boolean()
   def valid?(context, config) when is_map(context) and is_list(config) do
-    with true <- valid_pkce?(context, config),
-         true <- valid_redirect_uri?(context) do
-      true
+    with true <- valid_pkce?(context, config) do
+      valid_redirect_uri?(context)
     end
   end
 

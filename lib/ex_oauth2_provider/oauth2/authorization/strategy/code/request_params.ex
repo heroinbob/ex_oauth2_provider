@@ -54,9 +54,8 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParams do
   def validate(context, config) do
     with :ok <- validate_resource_owner(context),
          :ok <- validate_redirect_uri(context, config),
-         :ok <- validate_scopes(context, config),
-         :ok <- validate_pkce(context, config) do
-      :ok
+         :ok <- validate_scopes(context, config) do
+      validate_pkce(context, config)
     end
   end
 
