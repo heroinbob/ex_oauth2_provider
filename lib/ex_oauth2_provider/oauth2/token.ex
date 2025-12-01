@@ -10,6 +10,14 @@ defmodule ExOauth2Provider.Token do
 
   alias Ecto.Schema
 
+  @mod_lookup %{
+    "authorization_code" => ExOauth2Provider.Token.AuthorizationCode,
+    "client_credentials" => ExOauth2Provider.Token.ClientCredentials,
+    "password" => ExOauth2Provider.Token.Password,
+    "refresh_token" => ExOauth2Provider.Token.RefreshToken,
+    "urn:ietf:params:oauth:grant-type:device_code" => ExOauth2Provider.Token.DeviceCode
+  }
+
   @doc """
   Grants an access token based on grant_type strategy.
 
@@ -50,7 +58,7 @@ defmodule ExOauth2Provider.Token do
     |> Config.grant_flows()
     |> grant_type_can_be_used?(type, config)
     |> case do
-      true -> grant_type_to_mod(type)
+      true -> @mod_lookup[type]
       false -> nil
     end
   end
@@ -64,16 +72,6 @@ defmodule ExOauth2Provider.Token do
   defp grant_type_can_be_used?(grant_flows, grant_type, _config) do
     Enum.member?(grant_flows, grant_type)
   end
-
-  defp grant_type_to_mod("authorization_code"), do: ExOauth2Provider.Token.AuthorizationCode
-  defp grant_type_to_mod("client_credentials"), do: ExOauth2Provider.Token.ClientCredentials
-  defp grant_type_to_mod("password"), do: ExOauth2Provider.Token.Password
-  defp grant_type_to_mod("refresh_token"), do: ExOauth2Provider.Token.RefreshToken
-
-  defp grant_type_to_mod("urn:ietf:params:oauth:grant-type:device_code"),
-    do: ExOauth2Provider.Token.DeviceCode
-
-  defp grant_type_to_mod(_), do: nil
 
   @doc """
   Revokes an access token as per http://tools.ietf.org/html/rfc7009

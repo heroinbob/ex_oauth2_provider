@@ -18,6 +18,11 @@ defmodule ExOauth2Provider.Authorization do
           resource_owner: map()
         }
 
+  @mod_lookup %{
+    "authorization_code" => ExOauth2Provider.Authorization.Code,
+    "device_code" => ExOauth2Provider.Authorization.DeviceCode
+  }
+
   @doc """
   Check ExOauth2Provider.Authorization.Code for usage.
 
@@ -151,7 +156,7 @@ defmodule ExOauth2Provider.Authorization do
     |> Config.grant_flows()
     |> flow_can_be_used?(grant_flow)
     |> case do
-      true -> flow_to_mod(grant_flow)
+      true -> @mod_lookup[grant_flow]
       false -> nil
     end
   end
@@ -159,8 +164,4 @@ defmodule ExOauth2Provider.Authorization do
   defp flow_can_be_used?(grant_flows, grant_flow) do
     Enum.member?(grant_flows, grant_flow)
   end
-
-  defp flow_to_mod("authorization_code"), do: ExOauth2Provider.Authorization.Code
-  defp flow_to_mod("device_code"), do: ExOauth2Provider.Authorization.DeviceCode
-  defp flow_to_mod(_), do: nil
 end
