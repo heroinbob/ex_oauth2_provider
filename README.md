@@ -89,6 +89,34 @@ end
 
 Revocation will return `{:ok, %{}}` status even if the token is invalid.
 
+### Proof Key for Code Exchange
+
+PKCE is supported and disabled by default. You can configure PKCE support for the application
+or you can manually specify PKCE support by passing configuration explicitly. You can also
+override the application config by passing configuration explicitly.
+
+The following values are supported:
+ * `:enabled` - PKCE is required for the authorization code flow and both plain and S256 are allowed.
+ * `:plain_only` - Same as `:enabled` except only plain challenges are allowed.
+ * `:s256_only` - Same as `:enabled` except only S256 challenges are allowed.
+ * `:disabled` - PKCE is disabled an the respective fields are ignored.
+
+ To configure for your application:
+
+```elixir
+config :my_app, ExOauth2Provider, pkce: :enabled,
+```
+
+Or - specify manually in any call related to the flow:
+
+```elixir
+case ExOauth2Provider.Authorization.preauthorize(resource_owner, params, otp_app: :my_app, pkce: :enabled) do
+   # handle as you see fit...
+end
+```
+
+You can refer to [RFC-7636](https://datatracker.ietf.org/doc/html/rfc7636) for more about PKCE
+
 ### Authorization code flow in a Single Page Application
 
 ExOauth2Provider doesn't support **implicit** grant flow. Instead you should set up an application with no client secret, and use the **Authorize code** grant flow. `client_secret` isn't required unless it has been set for the application.
