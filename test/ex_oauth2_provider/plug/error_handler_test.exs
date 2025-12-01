@@ -1,7 +1,9 @@
 defmodule ExOauth2Provider.Plug.ErrorHandlerTest do
   @moduledoc false
   use ExUnit.Case, async: true
-  use Plug.Test
+
+  import Plug.Conn
+  import Plug.Test
 
   alias ExOauth2Provider.Plug.ErrorHandler
 
@@ -84,8 +86,8 @@ defmodule ExOauth2Provider.Plug.ErrorHandlerTest do
 
   defp content_type(headers) do
     headers
-    |> Enum.filter(fn({k, _}) -> k == "content-type" end)
-    |> Enum.map(fn({_, v}) -> v end)
+    |> Enum.filter(fn {k, _} -> k == "content-type" end)
+    |> Enum.map(fn {_, v} -> v end)
     |> List.first()
   end
 end

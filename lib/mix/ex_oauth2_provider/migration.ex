@@ -176,6 +176,11 @@ defmodule Mix.ExOauth2Provider.Migration do
     to_migration_attr({name, type})
   end
 
+  # Use a string DB column for Ecto.Enum fields.
+  defp to_migration_attr({name, Ecto.Enum, _defaults}) do
+    {name, :string, ""}
+  end
+
   defp to_migration_attr({name, type, defaults}) do
     defaults = Enum.map_join(defaults, ", ", fn {k, v} -> "#{k}: #{inspect(v)}" end)
 
