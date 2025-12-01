@@ -1,11 +1,15 @@
 defmodule ExOauth2Provider.Authorization.Utils do
   @moduledoc false
 
-  alias ExOauth2Provider.{Applications, Utils.Error}
+  alias ExOauth2Provider.{Authorization, Applications, Utils.Error}
   alias Ecto.Schema
 
   @doc false
-  @spec prehandle_request(Schema.t() | nil, map(), keyword()) :: {:ok, map()} | {:error, map()}
+  @spec prehandle_request(
+          Schema.t() | nil,
+          map(),
+          keyword()
+        ) :: {:ok, Authorization.context()} | {:error, map()}
   def prehandle_request(resource_owner, request, config, opts \\ []) do
     resource_owner
     |> new_params(request)
