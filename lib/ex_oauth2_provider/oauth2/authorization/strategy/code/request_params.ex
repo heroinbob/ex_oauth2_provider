@@ -102,7 +102,7 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParams do
     is_required = PKCE.required?(config)
 
     cond do
-      is_required and PKCE.valid?(request) -> :ok
+      is_required and PKCE.valid?(request, config) -> :ok
       not is_required -> :ok
       true -> {:error, :invalid_pkce}
     end

@@ -19,28 +19,23 @@ defmodule ExOauth2Provider.PKCE do
 
   There are two ways to enable PKCE:
 
-  1) Define it in the config for your app via `:use_pkce`
-  2) Add it to the options of the request via `with: :pkce`
+  1) Define it in the config for your app. See Config for details.
+  2) Add it to the options of the request the same as you would define it in the config.
   """
   @spec required?(config :: list()) :: boolean()
-  def required?(config) when is_list(config) do
-    opts = config[:with]
-
-    opts == :pkce or (is_list(opts) and :pkce in opts) or Config.use_pkce?(config)
-  end
+  defdelegate required?(config), to: Config, as: :use_pkce?
 
   @doc """
-  Validate that the request has the correct code challenge.
+  Validate that the request has the correct code challenge. Do not call this function
+  when PKCE is configured as `:disabled`. Be sure to call `required?/1` to verify PKCE
+  is enabled prior to calling this function.
   """
-  @spec valid?(context_or_request_params :: map()) :: boolean()
   @spec valid?(context_or_request_params :: map(), config :: list()) :: boolean()
-  def valid?(context_or_request, config \\ [])
-
   def valid?(%{"code_challenge" => challenge} = request, config) when is_list(config) do
     method = Map.get(request, "code_challenge_method", "plain")
 
     # We only need to check the format during the authorization phase.
-    method_allowed?(method, config[:allow]) and CodeChallenge.valid?(challenge, method)
+    method_allowed?(method, config) and CodeChallenge.valid?(challenge, method)
   end
 
   # This supports the grant access token step. It accepts the entire context.
@@ -61,35 +56,25 @@ defmodule ExOauth2Provider.PKCE do
         },
         config
       ) do
-    method_allowed?(method, config[:allow]) and
-      CodeVerifier.valid?(verifier, expected_value, method)
+    method_allowed?(method, config) and CodeVerifier.valid?(verifier, expected_value, method)
   end
 
   def valid?(_invalid_request, _config), do: false
 
   # Challenge payloads have a string method. Normalize it to make checking easy.
-  defp method_allowed?(method, allow) when is_binary(method) do
+  defp method_allowed?(method, config) when is_binary(method) do
     @method_lookup
     |> Map.get(method, :unsupported)
-    |> method_allowed?(allow)
+    |> method_allowed?(config)
   end
 
-  defp method_allowed?(:plain, allow) when allow in [:plain, nil] do
-    true
+  # NOTE: We do not check for :disabled because one shouldn't call valid/2 if PKCE is disabled.
+  # Let it crash if this is used in an unexpected way. That's a bug on us if so.
+  defp method_allowed?(method, config) do
+    case Config.pkce_option(config) do
+      :enabled -> method in [:plain, :s256]
+      :plain_only -> method == :plain
+      :s256_only -> method == :s256
+    end
   end
-
-  defp method_allowed?(:s256, allow) when allow in [:s256, nil] do
-    true
-  end
-
-  defp method_allowed?(:plain, allow) when is_list(allow) do
-    :plain in allow
-  end
-
-  defp method_allowed?(:s256, allow) when is_list(allow) do
-    :s256 in allow
-  end
-
-  # There is either an unsupported method or allow is incorrect.
-  defp method_allowed?(_method, _allow), do: false
 end

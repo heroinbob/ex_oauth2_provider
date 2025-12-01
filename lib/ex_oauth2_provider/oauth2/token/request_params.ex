@@ -17,7 +17,7 @@ defmodule ExOauth2Provider.Token.AuthorizationCode.RequestParams do
 
   defp valid_pkce?(context, config) do
     is_required = PKCE.required?(config)
-    (is_required and PKCE.valid?(context)) or not is_required
+    (is_required and PKCE.valid?(context, config)) or not is_required
   end
 
   defp valid_redirect_uri?(%{

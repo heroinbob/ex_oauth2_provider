@@ -32,7 +32,7 @@ defmodule ExOauth2Provider.Token.AuthorizationCode.RequestParamsTest do
                    "redirect_uri" => "test"
                  }
                },
-               with: :pkce
+               pkce: :enabled
              ) == true
     end
 
@@ -61,7 +61,7 @@ defmodule ExOauth2Provider.Token.AuthorizationCode.RequestParamsTest do
                    "redirect_uri" => "test"
                  }
                },
-               with: :pkce
+               pkce: :enabled
              ) == false
     end
 

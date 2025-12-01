@@ -198,7 +198,7 @@ defmodule ExOauth2Provider.AccessGrants.AccessGrantTest do
                  application: app,
                  resource_owner: user
                }
-               |> AccessGrant.changeset(attrs, otp_app: :ex_oauth2_provider, use_pkce: true)
+               |> AccessGrant.changeset(attrs, otp_app: :ex_oauth2_provider, pkce: :enabled)
                |> Changeset.apply_action(:validate)
 
       assert {"can't be blank", _} = errors[:code_challenge]
@@ -223,7 +223,7 @@ defmodule ExOauth2Provider.AccessGrants.AccessGrantTest do
                    application: app,
                    resource_owner: user
                  }
-                 |> AccessGrant.changeset(attrs, otp_app: :ex_oauth2_provider, use_pkce: true)
+                 |> AccessGrant.changeset(attrs, otp_app: :ex_oauth2_provider, pkce: :enabled)
                  |> Changeset.apply_action(:validate)
 
         assert grant.code_challenge == challenge
@@ -247,7 +247,7 @@ defmodule ExOauth2Provider.AccessGrants.AccessGrantTest do
                  application: app,
                  resource_owner: user
                }
-               |> AccessGrant.changeset(attrs, otp_app: :ex_oauth2_provider, use_pkce: true)
+               |> AccessGrant.changeset(attrs, otp_app: :ex_oauth2_provider, pkce: :enabled)
                |> Changeset.apply_action(:validate)
 
       refute Keyword.has_key?(errors, :code_challenge)

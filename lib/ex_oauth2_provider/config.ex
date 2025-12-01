@@ -1,6 +1,8 @@
 defmodule ExOauth2Provider.Config do
   @moduledoc false
 
+  @type pkce_options :: :disabled | :enabled | :plain_only | :s256
+
   @spec repo(keyword()) :: module()
   def repo(config) do
     get(config, :repo) ||
@@ -28,6 +30,12 @@ defmodule ExOauth2Provider.Config do
       |> app_base()
 
     Module.concat([app, context, module])
+  end
+
+  def allowed_pkce_methods(config) do
+    pkce_options = get(config, :pkce, %{enabled: false})
+
+    Map.get(pkce_options, :enabled, false)
   end
 
   @spec access_grant(keyword()) :: module()
@@ -106,17 +114,6 @@ defmodule ExOauth2Provider.Config do
   @spec use_refresh_token?(keyword()) :: boolean()
   def use_refresh_token?(config),
     do: get(config, :use_refresh_token, false)
-
-  @doc """
-  Returns true if PKCE is configured for the given config. You must require
-  and validate PKCE data during the authorization code flow.
-
-  To enable, include `use_pkce: true` in the config for your app.
-  """
-  @spec use_pkce?(keyword()) :: boolean()
-  def use_pkce?(config) do
-    get(config, :use_pkce, false) == true
-  end
 
   # Password auth method to use. Disabled by default. When set, it'll enable
   # password auth strategy. Set config as:
@@ -235,6 +232,31 @@ defmodule ExOauth2Provider.Config do
       :authenticate_token_with,
       &ExOauth2Provider.authenticate_token/2
     )
+  end
+
+  @doc """
+  Returns the configured PKCE status. Default is `:disabled`
+  """
+  @spec pkce_option(keyword()) :: pkce_options()
+  def pkce_option(config) do
+    value = get(config, :pkce, :disabled)
+
+    if value in [:disabled, :enabled, :plain_only, :s256_only] do
+      value
+    else
+      raise ArgumentError, "pkce must be one of :disabled | :enabled | :plain_only | :s256_only"
+    end
+  end
+
+  @doc """
+  Returns true if PKCE is configured for the given config. You must require
+  and validate PKCE data during the authorization code flow.
+
+  To enable, include `use_pkce: true` in the config for your app.
+  """
+  @spec use_pkce?(keyword()) :: boolean()
+  def use_pkce?(config) do
+    pkce_option(config) in [:enabled, :plain_only, :s256_only]
   end
 
   defp get(config, key, value \\ nil) do

@@ -210,7 +210,7 @@ defmodule ExOauth2Provider.Token.Strategy.AuthorizationCodeTest do
       |> Repo.update!()
 
       assert {:ok, %{access_token: _}} =
-               Token.grant(request, otp_app: :ex_oauth2_provider, use_pkce: true)
+               Token.grant(request, otp_app: :ex_oauth2_provider, pkce: :enabled)
     end
 
     test "returns an error when the PKCE info is invalid" do
@@ -218,7 +218,7 @@ defmodule ExOauth2Provider.Token.Strategy.AuthorizationCodeTest do
 
       request = Map.put(@valid_request, "code_verifier", verifier)
 
-      assert Token.grant(request, otp_app: :ex_oauth2_provider, use_pkce: true) ==
+      assert Token.grant(request, otp_app: :ex_oauth2_provider, pkce: :enabled) ==
                {:error, @invalid_grant, :unprocessable_entity}
     end
   end

@@ -43,11 +43,7 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParamsTest do
                expires_in: ^expires_in,
                redirect_uri: "test",
                scopes: "foo"
-             } =
-               RequestParams.to_access_grant_params(params,
-                 otp_app: :ex_oauth2_provider,
-                 use_pkce: true
-               )
+             } = RequestParams.to_access_grant_params(params, pkce: :enabled)
     end
   end
 
@@ -83,7 +79,7 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParamsTest do
         resource_owner: owner
       }
 
-      assert RequestParams.validate(context, otp_app: :ex_oauth2_provider, use_pkce: true) == :ok
+      assert RequestParams.validate(context, pkce: :enabled) == :ok
     end
 
     test "returns :invalid_request when the resource_owner is invalid" do
@@ -153,11 +149,7 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParamsTest do
         resource_owner: owner
       }
 
-      assert RequestParams.validate(
-               context,
-               otp_app: :ex_oauth2_provider,
-               use_pkce: true
-             ) == {:error, :invalid_pkce}
+      assert RequestParams.validate(context, pkce: :enabled) == {:error, :invalid_pkce}
     end
 
     test "supports non-native redirect URI" do

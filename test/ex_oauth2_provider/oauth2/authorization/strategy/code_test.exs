@@ -294,7 +294,7 @@ defmodule ExOauth2Provider.Authorization.CodeTest do
       assert Authorization.preauthorize(
                resource_owner,
                request,
-               [{:use_pkce, true} | @config]
+               [{:pkce, :enabled} | @config]
              ) == {:error, @invalid_request, :bad_request}
     end
   end
@@ -370,7 +370,7 @@ defmodule ExOauth2Provider.Authorization.CodeTest do
     end
 
     test "validates and stores PKCE data when enabled", %{resource_owner: resource_owner} do
-      config = [{:use_pkce, true} | @config]
+      config = [{:pkce, :enabled} | @config]
       challenge = PKCE.generate_code_challenge()
 
       request =
@@ -408,7 +408,7 @@ defmodule ExOauth2Provider.Authorization.CodeTest do
                Authorization.authorize(
                  resource_owner,
                  request,
-                 [{:use_pkce, true} | @config]
+                 [{:pkce, :enabled} | @config]
                )
     end
   end

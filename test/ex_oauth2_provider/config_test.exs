@@ -30,18 +30,56 @@ defmodule ExOauth2Provider.ConfigTest do
     end
   end
 
+  describe "pkce_option/1" do
+    test "returns :disabled by default" do
+      assert Config.pkce_option([]) == :disabled
+    end
+
+    test "returns the value from the given config when supported" do
+      for value <- [:disabled, :enabled, :plain_only, :s256_only] do
+        assert Config.pkce_option(pkce: value) == value
+      end
+    end
+
+    test "returns the value from the app config when supported" do
+      for value <- [:disabled, :enabled, :plain_only, :s256_only] do
+        Application.put_env(:my_app, ExOauth2Provider, pkce: value)
+
+        assert Config.pkce_option(otp_app: :my_app) == value
+      end
+    end
+
+    test "raises an error when given an unsupported value" do
+      assert_raise ArgumentError,
+                   "pkce must be one of :disabled | :enabled | :plain_only | :s256_only",
+                   fn ->
+                     assert Config.pkce_option(pkce: :foo)
+                   end
+
+      assert_raise ArgumentError,
+                   "pkce must be one of :disabled | :enabled | :plain_only | :s256_only",
+                   fn ->
+                     Application.put_env(:my_app, ExOauth2Provider, pkce: :foo)
+
+                     assert Config.pkce_option(otp_app: :my_app)
+                   end
+    end
+  end
+
   describe "use_pkce?/1" do
     test "returns true when the otp app is set to use_pkce" do
-      assert Config.use_pkce?(otp_app: :ex_oauth2_provider, use_pkce: true) == true
-      assert Config.use_pkce?(otp_app: :ex_oauth2_provider, use_pkce: "true") == false
-      assert Config.use_pkce?(otp_app: :ex_oauth2_provider, use_pkce: nil) == false
-      assert Config.use_pkce?(otp_app: :ex_oauth2_provider) == false
+      config = [otp_app: :ex_oauth2_provider]
+      assert Config.use_pkce?(pkce: :enabled) == true
+      assert Config.use_pkce?(pkce: :plain_only) == true
+      assert Config.use_pkce?(pkce: :s256_only) == true
+      assert Config.use_pkce?(pkce: :disabled) == false
+      assert Config.use_pkce?(config) == false
 
       # Verify it grabs from the app env
-      Application.put_env(:my_app, ExOauth2Provider, use_pkce: true)
+      Application.put_env(:my_app, ExOauth2Provider, pkce: :enabled)
       assert Config.use_pkce?(otp_app: :my_app) == true
 
-      Application.put_env(:my_app, ExOauth2Provider, use_pkce: "true")
+      Application.put_env(:my_app, ExOauth2Provider, pkce: :disabled)
       assert Config.use_pkce?(otp_app: :my_app) == false
     end
   end
