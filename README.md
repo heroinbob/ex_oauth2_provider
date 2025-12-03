@@ -117,6 +117,16 @@ end
 
 You can refer to [RFC-7636](https://datatracker.ietf.org/doc/html/rfc7636) for more about PKCE
 
+In order to use PKCE you must add the fields to the access grants table. You can run the following
+mix task within your application which will generate the migration for you. If you have a custom
+table name the task supports this too.
+
+```
+mix ex_oauth2_provider.add_pkce_fields -r MyApp.Repo
+
+mix ex_oauth2_provider.add_pkce_fields -r MyApp.Repo --table my_custom_table_name
+```
+
 ### Authorization code flow in a Single Page Application
 
 ExOauth2Provider doesn't support **implicit** grant flow. Instead you should set up an application with no client secret, and use the **Authorize code** grant flow. `client_secret` isn't required unless it has been set for the application.

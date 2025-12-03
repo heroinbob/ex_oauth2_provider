@@ -4,9 +4,11 @@ defmodule Mix.Tasks.ExOauth2Provider.AddPkceFields do
   @moduledoc """
   Generates a migration file that adds the PKCE columns to AccessGrants.
 
+      # Update the default table which is `oauth_access_grants`
       mix ex_oauth2_provider.add_pkce_fields -r MyApp.Repo
 
-      mix ex_oauth2_provider.add_pkce_fields -r MyApp.Repo --namespace oauth2
+      # Update your custom table name
+      mix ex_oauth2_provider.add_pkce_fields -r MyApp.Repo --table some_other_name
 
   This generator will add the oauth2 migration file in `priv/repo/migrations`.
 
