@@ -76,10 +76,18 @@ defmodule ExOauth2Provider.AccessGrants.AccessGrant do
   alias Ecto.Changeset
   alias ExOauth2Provider.{Mixin.Scopes, Utils}
 
-  @spec changeset(Ecto.Schema.t(), map(), keyword()) :: Changeset.t()
-  def changeset(grant, params, config) do
-    castable = castable_attrs(config)
-    required = required_attrs(config)
+  @doc """
+  Generate a validated changeset.
+  """
+  @spec changeset(
+          grant :: Ecto.Schema.t(),
+          params :: map(),
+          application :: Ecto.Schema.t(),
+          config :: keyword()
+        ) :: Changeset.t()
+  def changeset(grant, params, application, config) do
+    castable = castable_attrs(application, config)
+    required = required_attrs(application, config)
     params = coerce_params(params)
 
     grant
@@ -104,21 +112,21 @@ defmodule ExOauth2Provider.AccessGrants.AccessGrant do
 
   defp coerce_params(params), do: params
 
-  defp castable_attrs(config) do
+  defp castable_attrs(application, config) do
     castable = [
       :expires_in,
       :redirect_uri,
       :scopes
     ]
 
-    if PKCE.required?(config) do
+    if PKCE.required?(application, config) do
       [:code_challenge, :code_challenge_method] ++ castable
     else
       castable
     end
   end
 
-  defp required_attrs(config) do
+  defp required_attrs(application, config) do
     castable = [
       :application,
       :expires_in,
@@ -127,7 +135,7 @@ defmodule ExOauth2Provider.AccessGrants.AccessGrant do
       :token
     ]
 
-    if PKCE.required?(config) do
+    if PKCE.required?(application, config) do
       [:code_challenge, :code_challenge_method] ++ castable
     else
       castable

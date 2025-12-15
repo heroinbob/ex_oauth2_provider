@@ -37,13 +37,34 @@ defmodule ExOauth2Provider.Applications.Application do
       end
   """
 
+  alias ExOauth2Provider.PKCE
+
   @type t :: Ecto.Schema.t()
+  @type pkce_setting :: PKCE.setting()
+
+  @default_pkce_setting :disabled
+  @supported_pkce_settings PKCE.settings()
+
+  @doc """
+  Returns a list of the supported PKCE settings for an app.
+  """
+  @spec pkce_settings() :: pkce_setting()
+  def pkce_settings, do: @supported_pkce_settings
 
   @doc false
   def attrs() do
     [
       {:is_trusted, :boolean, default: false, null: false},
       {:name, :string},
+      {
+        :pkce,
+        Ecto.Enum,
+        [
+          default: :disabled,
+          null: false,
+          values: @supported_pkce_settings
+        ]
+      },
       {:redirect_uri, :string},
       {:scopes, :string, default: ""},
       {:secret, :string, default: ""},
@@ -88,8 +109,8 @@ defmodule ExOauth2Provider.Applications.Application do
   def changeset(application, params, config \\ []) do
     application
     |> maybe_new_application_changeset(params, config)
-    |> Changeset.cast(params, [:is_trusted, :name, :secret, :redirect_uri, :scopes])
-    |> Changeset.validate_required([:name, :uid, :redirect_uri])
+    |> Changeset.cast(params, [:is_trusted, :name, :pkce, :secret, :redirect_uri, :scopes])
+    |> Changeset.validate_required([:name, :pkce, :uid, :redirect_uri])
     |> validate_secret_not_nil()
     |> Scopes.validate_scopes(nil, config)
     |> validate_redirect_uri(config)

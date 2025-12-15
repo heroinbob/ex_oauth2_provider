@@ -179,17 +179,26 @@ defmodule ExOauth2Provider.Authorization.Code do
   defp issue_grant({:error, %{error: _error} = params}, _config), do: {:error, params}
 
   defp issue_grant(
-         {:ok, %{resource_owner: resource_owner, client: application, request: request} = params},
+         {
+           :ok,
+           %{
+             client: client,
+             resource_owner: resource_owner
+           } = context
+         },
          config
        ) do
-    grant_params = RequestParams.to_access_grant_params(request, config)
+    # Be sure to set the client in the config so that the grant params contain PKCE
+    # if it's required and it's validated during creation.
+    config = [{:client, client} | config]
+    grant_params = RequestParams.to_access_grant_params(context, config)
 
-    case AccessGrants.create_grant(resource_owner, application, grant_params, config) do
+    case AccessGrants.create_grant(resource_owner, client, grant_params, config) do
       {:ok, grant} ->
-        {:ok, Map.put(params, :grant, grant)}
+        {:ok, Map.put(context, :grant, grant)}
 
       {:error, error} ->
-        Error.add_error({:ok, params}, error)
+        Error.add_error({:ok, context}, error)
     end
   end
 
@@ -220,14 +229,14 @@ defmodule ExOauth2Provider.Authorization.Code do
 
   defp validate_request({:error, _} = error, _config), do: error
 
-  defp validate_request({:ok, params}, config) do
-    case RequestParams.validate(params, config) do
+  defp validate_request({:ok, context}, config) do
+    case RequestParams.validate(context, config) do
       :ok ->
-        {:ok, params}
+        {:ok, context}
 
       {:error, error} ->
         Error.add_error(
-          {:ok, params},
+          {:ok, context},
           Map.get(@error_lookup, error, Error.invalid_request())
         )
     end

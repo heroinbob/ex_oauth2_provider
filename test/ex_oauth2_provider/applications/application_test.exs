@@ -13,7 +13,7 @@ defmodule ExOauth2Provider.Applications.ApplicationTest do
       {:ok, application: application}
     end
 
-    test "validates", %{application: application} do
+    test "validates name", %{application: application} do
       changeset = Application.changeset(application, %{name: ""})
       assert changeset.errors[:name]
     end
@@ -42,6 +42,36 @@ defmodule ExOauth2Provider.Applications.ApplicationTest do
         changeset = Application.changeset(application, %{redirect_uri: redirect_uri})
         assert changeset.errors[:redirect_uri]
       end)
+    end
+
+    test "requires PKCE to be one of the supported values", %{application: application} do
+      # Default should be :disabled by default.
+      changeset = Application.changeset(application, %{})
+      refute Keyword.has_key?(changeset.errors, :pkce)
+      assert changeset.data.pkce == :disabled
+
+      changeset = Application.changeset(application, %{pkce: ""})
+      refute Keyword.has_key?(changeset.errors, :pkce)
+      assert changeset.data.pkce == :disabled
+
+      changeset = Application.changeset(application, %{pkce: nil})
+      assert {"can't be blank", _} = changeset.errors[:pkce]
+
+      changeset = Application.changeset(application, %{pkce: :yes_please})
+      assert {"is invalid", _} = changeset.errors[:pkce]
+
+      # Disabled won't trigger a change so this tests that the non disabled
+      # work as expected
+      for value <- [:all_methods, :plain_only, :s256_only] do
+        changeset = Application.changeset(application, %{pkce: value})
+        refute Keyword.has_key?(changeset.errors, :pkce)
+        assert changeset.changes.pkce == value
+      end
+
+      changeset = Application.changeset(application, %{pkce: :disabled})
+      refute Keyword.has_key?(changeset.errors, :pkce)
+      refute Map.has_key?(changeset.changes, :pkce)
+      assert changeset.data.pkce == :disabled
     end
 
     test "doesn't require scopes", %{application: application} do

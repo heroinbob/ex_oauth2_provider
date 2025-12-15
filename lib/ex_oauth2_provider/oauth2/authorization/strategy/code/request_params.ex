@@ -11,9 +11,17 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParams do
   }
 
   @doc """
-  Build a map of params for creating an access grant.
+  Build a map of params for creating an access grant. PKCE is included depending
+  on the client pkce setting or the config. The first param is the request
+  params.
+
+  ## Config
+
+  - `:client` - You can specify the client which will have it's PKCE setting taken into
+                account in addition to the application config.
   """
-  def to_access_grant_params(request, config) do
+  @spec to_access_grant_params(context :: Authorization.context(), config :: list()) :: map()
+  def to_access_grant_params(%{request: request} = context, config) do
     request
     |> Map.take(~w[redirect_uri scope])
     |> Map.new(fn {k, v} ->
@@ -23,12 +31,12 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParams do
       end
     end)
     |> Map.put(:expires_in, Config.authorization_code_expires_in(config))
-    |> maybe_include_pkce(request, config)
+    |> maybe_include_pkce(context, config)
   end
 
-  defp maybe_include_pkce(attrs, request, config) do
+  defp maybe_include_pkce(attrs, %{request: request} = context, config) do
     pkce_attrs =
-      if PKCE.required?(config) do
+      if PKCE.required?(context, config) do
         %{
           code_challenge: request["code_challenge"],
           code_challenge_method: request["code_challenge_method"]
@@ -52,6 +60,8 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParams do
              | :invalid_scopes
              | :invalid_pkce}
   def validate(context, config) do
+    # Remember - client ID is validated and set in the contexts as the first step
+    # in the flow. So it's guaranteed if this is called.
     with :ok <- validate_resource_owner(context),
          :ok <- validate_redirect_uri(context, config),
          :ok <- validate_scopes(context, config) do
@@ -98,11 +108,11 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParams do
 
   defp validate_redirect_uri(_context, _config), do: {:error, :invalid_request}
 
-  defp validate_pkce(%{request: request} = _context, config) do
-    is_required = PKCE.required?(config)
+  defp validate_pkce(context, config) do
+    is_required = PKCE.required?(context, config)
 
     cond do
-      is_required and PKCE.valid?(request, config) -> :ok
+      is_required and PKCE.valid?(context, config) -> :ok
       not is_required -> :ok
       true -> {:error, :invalid_pkce}
     end

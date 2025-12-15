@@ -129,7 +129,7 @@ defmodule ExOauth2Provider.AccessGrantsTest do
                  application,
                  attrs,
                  otp_app: :ex_oauth2_provider,
-                 pkce: :enabled
+                 pkce: :all_methods
                )
 
       assert grant.code_challenge == challenge
@@ -141,7 +141,7 @@ defmodule ExOauth2Provider.AccessGrantsTest do
                  application,
                  @valid_attrs,
                  otp_app: :ex_oauth2_provider,
-                 pkce: :enabled
+                 pkce: :all_methods
                )
 
       assert {"can't be blank", _} = changeset.errors[:code_challenge]
