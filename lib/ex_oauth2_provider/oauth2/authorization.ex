@@ -33,10 +33,10 @@ defmodule ExOauth2Provider.Authorization do
 
   The config is a list of various additional parameters.
 
-  - `:otp_app` - Required. The name of the app to pull config data for.
-  - `:with`    - Optional. This can be a single value or a list of things that
-                 should be included. The only supported value today is `:pkce`
-                 to require PKCE be used.
+  - `:otp_app` - Optional. The name of the app to pull config data for.
+  - `:pkce`    - Optional. Specify whether PKCE is supported and if so what
+                 kinds of challenge is accepted. This is the same as the
+                 app config option but you can manually specify an override.
   """
   @spec preauthorize(Schema.t() | nil, map(), keyword()) ::
           Response.preauthorization_success()
@@ -76,6 +76,15 @@ defmodule ExOauth2Provider.Authorization do
 
   @doc """
   Check ExOauth2Provider.Authorization.Code for usage.
+
+  ## Config
+
+  You can pass in optional fields if desired.
+
+  - `:otp_app` - Optional. The name of the app to pull config data for.
+  - `:pkce`    - Optional. Specify whether PKCE is supported and if so what
+                 kinds of challenge is accepted. This is the same as the
+                 app config option but you can manually specify an override.
   """
   @spec authorize(Schema.t(), map(), keyword()) ::
           {:ok, binary()} | Response.error() | Response.redirect() | Response.native_redirect()
@@ -107,6 +116,15 @@ defmodule ExOauth2Provider.Authorization do
 
   @doc """
   Check ExOauth2Provider.Authorization.Code for usage.
+
+  ## Config
+
+  You can pass in optional fields if desired.
+
+  - `:otp_app` - Optional. The name of the app to pull config data for.
+  - `:pkce`    - Optional. Specify whether PKCE is supported and if so what
+                 kinds of challenge is accepted. This is the same as the
+                 app config option but you can manually specify an override.
   """
   @spec deny(Schema.t(), map(), keyword()) :: Response.error() | Response.redirect()
   def deny(resource_owner, request, config \\ []) do
