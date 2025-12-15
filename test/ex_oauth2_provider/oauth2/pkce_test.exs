@@ -1,7 +1,6 @@
 defmodule ExOauth2Provider.PKCETest do
   use ExUnit.Case, async: true
 
-  alias Dummy.OauthAccessGrants.OauthAccessGrant
   alias Dummy.OauthApplications.OauthApplication
   alias ExOauth2Provider.PKCE
   alias ExOauth2Provider.Test
@@ -231,8 +230,6 @@ defmodule ExOauth2Provider.PKCETest do
       assert PKCE.valid?(context, pkce: :all_methods) == true
       assert PKCE.valid?(context, pkce: :s256_only) == true
       assert PKCE.valid?(context, pkce: :plain_only) == false
-
-      challenge = Test.PKCE.generate_code_challenge(%{method: :plain})
 
       context =
         Test.Fixtures.token_request_context_with_pkce(

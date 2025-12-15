@@ -42,7 +42,6 @@ defmodule ExOauth2Provider.Applications.Application do
   @type t :: Ecto.Schema.t()
   @type pkce_setting :: PKCE.setting()
 
-  @default_pkce_setting :disabled
   @supported_pkce_settings PKCE.settings()
 
   @doc """
