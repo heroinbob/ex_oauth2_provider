@@ -1,7 +1,13 @@
 defmodule ExOauth2Provider.Config do
   @moduledoc false
 
-  @type pkce_options :: :disabled | :enabled | :plain_only | :s256
+  alias ExOauth2Provider.PKCE
+
+  @type pkce_setting :: PKCE.setting()
+
+  @default_pkce_setting :disabled
+  @pkce_settings PKCE.settings()
+  @enabled_pkce_settings @pkce_settings -- [:disabled]
 
   @spec repo(keyword()) :: module()
   def repo(config) do
@@ -30,12 +36,6 @@ defmodule ExOauth2Provider.Config do
       |> app_base()
 
     Module.concat([app, context, module])
-  end
-
-  def allowed_pkce_methods(config) do
-    pkce_options = get(config, :pkce, %{enabled: false})
-
-    Map.get(pkce_options, :enabled, false)
   end
 
   @spec access_grant(keyword()) :: module()
@@ -237,14 +237,14 @@ defmodule ExOauth2Provider.Config do
   @doc """
   Returns the configured PKCE status. Default is `:disabled`
   """
-  @spec pkce_option(keyword()) :: pkce_options()
-  def pkce_option(config) do
-    value = get(config, :pkce, :disabled)
+  @spec pkce_setting(keyword()) :: pkce_setting()
+  def pkce_setting(config) do
+    value = get(config, :pkce, @default_pkce_setting)
 
-    if value in [:disabled, :enabled, :plain_only, :s256_only] do
+    if value in @pkce_settings do
       value
     else
-      raise ArgumentError, "pkce must be one of :disabled | :enabled | :plain_only | :s256_only"
+      raise ArgumentError, "pkce must be one of #{Enum.join(@pkce_settings, " | ")}"
     end
   end
 
@@ -252,12 +252,10 @@ defmodule ExOauth2Provider.Config do
   Returns true if PKCE is configured for the given config. You must require
   and validate PKCE data during the authorization code flow.
 
-  To enable, include `use_pkce: true` in the config for your app.
+  To enable, include the `:pkce` option in the config for your app.
   """
   @spec use_pkce?(keyword()) :: boolean()
-  def use_pkce?(config) do
-    pkce_option(config) in [:enabled, :plain_only, :s256_only]
-  end
+  def use_pkce?(config), do: pkce_setting(config) in @enabled_pkce_settings
 
   defp get(config, key, value \\ nil) do
     otp_app = Keyword.get(config, :otp_app)

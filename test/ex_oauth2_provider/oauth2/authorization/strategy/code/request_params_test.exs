@@ -8,12 +8,15 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParamsTest do
 
   describe "to_access_grant_params/2" do
     test "returns a map of params for creating an access grant" do
-      params = %{
-        "redirect_uri" => "test",
-        "scope" => "foo"
-      }
-
       expires_in = Config.authorization_code_expires_in(otp_app: :ex_oauth2_provider)
+
+      context =
+        Fixtures.authorization_request_context(
+          request: %{
+            "redirect_uri" => "test",
+            "scope" => "foo"
+          }
+        )
 
       assert %{
                expires_in: ^expires_in,
@@ -21,29 +24,51 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParamsTest do
                scopes: "foo"
              } =
                grant_params =
-               RequestParams.to_access_grant_params(params, otp_app: :ex_oauth2_provider)
+               RequestParams.to_access_grant_params(context, otp_app: :ex_oauth2_provider)
 
       refute Map.has_key?(grant_params, :code_challenge)
       refute Map.has_key?(grant_params, :code_challenge_method)
     end
 
-    test "includes PKCE fields when PKCE is enabled" do
-      params = %{
-        "code_challenge" => "challenge",
-        "code_challenge_method" => "method",
-        "redirect_uri" => "test",
-        "scope" => "foo"
-      }
+    test "does not include redirect_uri when it's missing" do
+      context =
+        Fixtures.authorization_request_context(
+          request: %{
+            # "redirect_uri" => "test",
+            "scope" => "foo"
+          }
+        )
 
-      expires_in = Config.authorization_code_expires_in(otp_app: :ex_oauth2_provider)
+      assert %{expires_in: _} =
+               grant_params =
+               RequestParams.to_access_grant_params(context, otp_app: :ex_oauth2_provider)
+
+      refute Map.has_key?(grant_params, :redirect_uri)
+    end
+
+    test "does not include scopes when it's missing" do
+      context =
+        Fixtures.authorization_request_context(
+          request: %{
+            "redirect_uri" => "test"
+          }
+        )
+
+      assert %{expires_in: _} =
+               grant_params =
+               RequestParams.to_access_grant_params(context, otp_app: :ex_oauth2_provider)
+
+      refute Map.has_key?(grant_params, :scopes)
+    end
+
+    test "includes PKCE fields when PKCE is enabled" do
+      %{request: %{"code_challenge" => challenge}} =
+        context = Fixtures.authorization_request_context_with_pkce()
 
       assert %{
-               code_challenge: "challenge",
-               code_challenge_method: "method",
-               expires_in: ^expires_in,
-               redirect_uri: "test",
-               scopes: "foo"
-             } = RequestParams.to_access_grant_params(params, pkce: :enabled)
+               code_challenge: ^challenge,
+               code_challenge_method: "S256"
+             } = RequestParams.to_access_grant_params(context, pkce: :all_methods)
     end
   end
 
@@ -52,14 +77,15 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParamsTest do
       owner = Fixtures.resource_owner()
       application = Fixtures.application(resource_owner: owner)
 
-      context = %{
-        client: application,
-        request: %{
-          "redirect_uri" => application.redirect_uri,
-          "scope" => application.scopes
-        },
-        resource_owner: owner
-      }
+      context =
+        Fixtures.authorization_request_context(
+          client: application,
+          request: %{
+            "redirect_uri" => application.redirect_uri,
+            "scope" => application.scopes
+          },
+          resource_owner: owner
+        )
 
       assert RequestParams.validate(context, otp_app: :ex_oauth2_provider) == :ok
     end
@@ -68,32 +94,34 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParamsTest do
       owner = Fixtures.resource_owner()
       application = Fixtures.application(resource_owner: owner)
 
-      context = %{
-        client: application,
-        request: %{
-          "code_challenge" => PKCE.generate_code_challenge(),
-          "code_challenge_method" => "S256",
-          "redirect_uri" => application.redirect_uri,
-          "scope" => application.scopes
-        },
-        resource_owner: owner
-      }
+      context =
+        Fixtures.authorization_request_context(
+          client: application,
+          request: %{
+            "code_challenge" => PKCE.generate_code_challenge(),
+            "code_challenge_method" => "S256",
+            "redirect_uri" => application.redirect_uri,
+            "scope" => application.scopes
+          },
+          resource_owner: owner
+        )
 
-      assert RequestParams.validate(context, pkce: :enabled) == :ok
+      assert RequestParams.validate(context, pkce: :all_methods) == :ok
     end
 
     test "returns :invalid_request when the resource_owner is invalid" do
       application = Fixtures.application()
 
-      context = %{
-        client: application,
-        request: %{
-          "redirect_uri" => application.redirect_uri,
-          "scope" => application.scopes
-        },
-        # Owner must be a struct to be considered valid.
-        resource_owner: %{id: "abc"}
-      }
+      context =
+        Fixtures.authorization_request_context(
+          client: application,
+          request: %{
+            "redirect_uri" => application.redirect_uri,
+            "scope" => application.scopes
+          },
+          # Owner must be a struct to be considered valid.
+          resource_owner: %{id: "abc"}
+        )
 
       assert RequestParams.validate(context, otp_app: :ex_oauth2_provider) ==
                {:error, :invalid_resource_owner}
@@ -103,14 +131,15 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParamsTest do
       owner = Fixtures.resource_owner()
       application = Fixtures.application(resource_owner: owner)
 
-      context = %{
-        client: application,
-        request: %{
-          "redirect_uri" => "abc",
-          "scope" => application.scopes
-        },
-        resource_owner: owner
-      }
+      context =
+        Fixtures.authorization_request_context(
+          client: application,
+          request: %{
+            "redirect_uri" => "abc",
+            "scope" => application.scopes
+          },
+          resource_owner: owner
+        )
 
       assert RequestParams.validate(context, otp_app: :ex_oauth2_provider) ==
                {:error, :invalid_redirect_uri}
@@ -120,15 +149,16 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParamsTest do
       owner = Fixtures.resource_owner()
       application = Fixtures.application(resource_owner: owner)
 
-      context = %{
-        client: application,
-        request: %{
-          "redirect_uri" => application.redirect_uri,
-          # Include one not in the application scopes!
-          "scope" => application.scopes <> " abc"
-        },
-        resource_owner: owner
-      }
+      context =
+        Fixtures.authorization_request_context(
+          client: application,
+          request: %{
+            "redirect_uri" => application.redirect_uri,
+            # Include one not in the application scopes!
+            "scope" => application.scopes <> " abc"
+          },
+          resource_owner: owner
+        )
 
       assert RequestParams.validate(context, otp_app: :ex_oauth2_provider) ==
                {:error, :invalid_scopes}
@@ -138,18 +168,19 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParamsTest do
       owner = Fixtures.resource_owner()
       application = Fixtures.application(resource_owner: owner)
 
-      context = %{
-        client: application,
-        request: %{
-          "code_challenge" => "abc",
-          "code_challenge_method" => "S256",
-          "redirect_uri" => application.redirect_uri,
-          "scope" => application.scopes
-        },
-        resource_owner: owner
-      }
+      context =
+        Fixtures.authorization_request_context_with_pkce(
+          client: application,
+          request: %{
+            "code_challenge" => "abc",
+            "code_challenge_method" => "S256",
+            "redirect_uri" => application.redirect_uri,
+            "scope" => application.scopes
+          },
+          resource_owner: owner
+        )
 
-      assert RequestParams.validate(context, pkce: :enabled) == {:error, :invalid_pkce}
+      assert RequestParams.validate(context, pkce: :all_methods) == {:error, :invalid_pkce}
     end
 
     test "supports non-native redirect URI" do
@@ -161,14 +192,15 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParamsTest do
           resource_owner: owner
         )
 
-      context = %{
-        client: application,
-        request: %{
-          "redirect_uri" => application.redirect_uri,
-          "scope" => application.scopes
-        },
-        resource_owner: owner
-      }
+      context =
+        Fixtures.authorization_request_context(
+          client: application,
+          request: %{
+            "redirect_uri" => application.redirect_uri,
+            "scope" => application.scopes
+          },
+          resource_owner: owner
+        )
 
       assert RequestParams.validate(context, otp_app: :ex_oauth2_provider) == :ok
     end
@@ -178,16 +210,17 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParamsTest do
       application = Fixtures.application(resource_owner: owner)
 
       # Gave it a bad challenge so it'd fail when PKCE is enabled.
-      context = %{
-        client: application,
-        request: %{
-          "code_challenge" => "abc",
-          "code_challenge_method" => "S256",
-          "redirect_uri" => application.redirect_uri,
-          "scope" => application.scopes
-        },
-        resource_owner: owner
-      }
+      context =
+        Fixtures.authorization_request_context_with_pkce(
+          client: application,
+          request: %{
+            "code_challenge" => "abc",
+            "code_challenge_method" => "S256",
+            "redirect_uri" => application.redirect_uri,
+            "scope" => application.scopes
+          },
+          resource_owner: owner
+        )
 
       assert RequestParams.validate(context, otp_app: :ex_oauth2_provider) == :ok
     end

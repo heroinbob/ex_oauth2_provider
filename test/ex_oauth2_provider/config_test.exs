@@ -30,38 +30,38 @@ defmodule ExOauth2Provider.ConfigTest do
     end
   end
 
-  describe "pkce_option/1" do
+  describe "pkce_setting/1" do
     test "returns :disabled by default" do
-      assert Config.pkce_option([]) == :disabled
+      assert Config.pkce_setting([]) == :disabled
     end
 
     test "returns the value from the given config when supported" do
-      for value <- [:disabled, :enabled, :plain_only, :s256_only] do
-        assert Config.pkce_option(pkce: value) == value
+      for value <- [:all_methods, :disabled, :plain_only, :s256_only] do
+        assert Config.pkce_setting(pkce: value) == value
       end
     end
 
     test "returns the value from the app config when supported" do
-      for value <- [:disabled, :enabled, :plain_only, :s256_only] do
+      for value <- [:all_methods, :disabled, :plain_only, :s256_only] do
         Application.put_env(:my_app, ExOauth2Provider, pkce: value)
 
-        assert Config.pkce_option(otp_app: :my_app) == value
+        assert Config.pkce_setting(otp_app: :my_app) == value
       end
     end
 
     test "raises an error when given an unsupported value" do
       assert_raise ArgumentError,
-                   "pkce must be one of :disabled | :enabled | :plain_only | :s256_only",
+                   "pkce must be one of all_methods | disabled | plain_only | s256_only",
                    fn ->
-                     assert Config.pkce_option(pkce: :foo)
+                     assert Config.pkce_setting(pkce: :foo)
                    end
 
       assert_raise ArgumentError,
-                   "pkce must be one of :disabled | :enabled | :plain_only | :s256_only",
+                   "pkce must be one of all_methods | disabled | plain_only | s256_only",
                    fn ->
                      Application.put_env(:my_app, ExOauth2Provider, pkce: :foo)
 
-                     assert Config.pkce_option(otp_app: :my_app)
+                     assert Config.pkce_setting(otp_app: :my_app)
                    end
     end
   end
@@ -69,14 +69,14 @@ defmodule ExOauth2Provider.ConfigTest do
   describe "use_pkce?/1" do
     test "returns true when the otp app is set to use_pkce" do
       config = [otp_app: :ex_oauth2_provider]
-      assert Config.use_pkce?(pkce: :enabled) == true
+      assert Config.use_pkce?(pkce: :all_methods) == true
       assert Config.use_pkce?(pkce: :plain_only) == true
       assert Config.use_pkce?(pkce: :s256_only) == true
       assert Config.use_pkce?(pkce: :disabled) == false
       assert Config.use_pkce?(config) == false
 
       # Verify it grabs from the app env
-      Application.put_env(:my_app, ExOauth2Provider, pkce: :enabled)
+      Application.put_env(:my_app, ExOauth2Provider, pkce: :all_methods)
       assert Config.use_pkce?(otp_app: :my_app) == true
 
       Application.put_env(:my_app, ExOauth2Provider, pkce: :disabled)

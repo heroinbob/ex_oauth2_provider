@@ -261,7 +261,6 @@ defmodule ExOauth2Provider.Authorization.CodeTest do
       application: application
     } do
       expected_scopes = Scopes.to_list(@valid_request["scope"])
-      config = [{:use_pkce, true} | @config]
 
       request =
         Map.merge(
@@ -275,7 +274,20 @@ defmodule ExOauth2Provider.Authorization.CodeTest do
       assert Authorization.preauthorize(
                resource_owner,
                request,
-               config
+               [{:use_pkce, true} | @config]
+             ) == {:ok, application, expected_scopes}
+
+      # Ensure that when the client supports PKCE it's being passed in correctly.
+      %{pkce: :s256_only} =
+        application =
+        application
+        |> Changeset.change(pkce: :s256_only)
+        |> Repo.update!()
+
+      assert Authorization.preauthorize(
+               resource_owner,
+               request,
+               @config
              ) == {:ok, application, expected_scopes}
     end
 
@@ -294,7 +306,7 @@ defmodule ExOauth2Provider.Authorization.CodeTest do
       assert Authorization.preauthorize(
                resource_owner,
                request,
-               [{:pkce, :enabled} | @config]
+               [{:pkce, :all_methods} | @config]
              ) == {:error, @invalid_request, :bad_request}
     end
   end
@@ -370,7 +382,7 @@ defmodule ExOauth2Provider.Authorization.CodeTest do
     end
 
     test "validates and stores PKCE data when enabled", %{resource_owner: resource_owner} do
-      config = [{:pkce, :enabled} | @config]
+      config = [{:pkce, :all_methods} | @config]
       challenge = PKCE.generate_code_challenge()
 
       request =
@@ -408,7 +420,7 @@ defmodule ExOauth2Provider.Authorization.CodeTest do
                Authorization.authorize(
                  resource_owner,
                  request,
-                 [{:pkce, :enabled} | @config]
+                 [{:pkce, :all_methods} | @config]
                )
     end
   end

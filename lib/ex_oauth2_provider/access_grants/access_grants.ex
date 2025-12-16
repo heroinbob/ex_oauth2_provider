@@ -47,7 +47,7 @@ defmodule ExOauth2Provider.AccessGrants do
     config
     |> Config.access_grant()
     |> struct(resource_owner: resource_owner, application: application)
-    |> AccessGrant.changeset(attrs, config)
+    |> AccessGrant.changeset(attrs, application, config)
     |> Config.repo(config).insert()
   end
 

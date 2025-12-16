@@ -19,6 +19,7 @@ defmodule ExOauth2Provider.Token.Strategy.AuthorizationCodeTest do
   @client_secret "secret"
   @code "code"
   @redirect_uri "urn:ietf:wg:oauth:2.0:oob"
+
   @valid_request %{
     "client_id" => @client_id,
     "client_secret" => @client_secret,
@@ -210,7 +211,7 @@ defmodule ExOauth2Provider.Token.Strategy.AuthorizationCodeTest do
       |> Repo.update!()
 
       assert {:ok, %{access_token: _}} =
-               Token.grant(request, otp_app: :ex_oauth2_provider, pkce: :enabled)
+               Token.grant(request, otp_app: :ex_oauth2_provider, pkce: :all_methods)
     end
 
     test "returns an error when the PKCE info is invalid" do
@@ -218,7 +219,7 @@ defmodule ExOauth2Provider.Token.Strategy.AuthorizationCodeTest do
 
       request = Map.put(@valid_request, "code_verifier", verifier)
 
-      assert Token.grant(request, otp_app: :ex_oauth2_provider, pkce: :enabled) ==
+      assert Token.grant(request, otp_app: :ex_oauth2_provider, pkce: :all_methods) ==
                {:error, @invalid_grant, :unprocessable_entity}
     end
   end

@@ -8,7 +8,7 @@ defmodule ExOauth2Provider.AccessGrants.AccessGrantTest do
   alias ExOauth2Provider.Test.Fixtures
   alias ExOauth2Provider.Test.PKCE
 
-  describe "changeset/3" do
+  describe "changeset/4" do
     test "returns a valid changeset with a token and the default app scope when the attrs are valid" do
       app = Fixtures.application()
       user = Fixtures.resource_owner()
@@ -23,7 +23,7 @@ defmodule ExOauth2Provider.AccessGrants.AccessGrantTest do
                  application: app,
                  resource_owner: user
                }
-               |> AccessGrant.changeset(attrs, otp_app: :ex_oauth2_provider)
+               |> AccessGrant.changeset(attrs, app, otp_app: :ex_oauth2_provider)
                |> Changeset.apply_action(:validate)
 
       assert grant.application == app
@@ -48,7 +48,7 @@ defmodule ExOauth2Provider.AccessGrants.AccessGrantTest do
                  application: app,
                  resource_owner: user
                }
-               |> AccessGrant.changeset(attrs, otp_app: :ex_oauth2_provider)
+               |> AccessGrant.changeset(attrs, app, otp_app: :ex_oauth2_provider)
                |> Changeset.apply_action(:validate)
 
       assert grant.expires_in == 900
@@ -63,7 +63,7 @@ defmodule ExOauth2Provider.AccessGrants.AccessGrantTest do
                  application: app,
                  resource_owner: user
                }
-               |> AccessGrant.changeset(attrs, otp_app: :ex_oauth2_provider)
+               |> AccessGrant.changeset(attrs, app, otp_app: :ex_oauth2_provider)
                |> Changeset.apply_action(:validate)
 
       assert {"is invalid", _} = errors[:expires_in]
@@ -83,7 +83,7 @@ defmodule ExOauth2Provider.AccessGrants.AccessGrantTest do
                  application: app,
                  resource_owner: user
                }
-               |> AccessGrant.changeset(attrs, otp_app: :ex_oauth2_provider)
+               |> AccessGrant.changeset(attrs, app, opt_app: :ex_oauth2_provider)
                |> Changeset.apply_action(:validate)
 
       assert {"can't be blank", _} = errors[:redirect_uri]
@@ -98,7 +98,7 @@ defmodule ExOauth2Provider.AccessGrants.AccessGrantTest do
                  application: app,
                  resource_owner: user
                }
-               |> AccessGrant.changeset(attrs, otp_app: :ex_oauth2_provider)
+               |> AccessGrant.changeset(attrs, app, opt_app: :ex_oauth2_provider)
                |> Changeset.apply_action(:validate)
 
       assert {"can't be blank", _} = errors[:redirect_uri]
@@ -113,7 +113,7 @@ defmodule ExOauth2Provider.AccessGrants.AccessGrantTest do
                  application: app,
                  resource_owner: user
                }
-               |> AccessGrant.changeset(attrs, otp_app: :ex_oauth2_provider)
+               |> AccessGrant.changeset(attrs, app, opt_app: :ex_oauth2_provider)
                |> Changeset.apply_action(:validate)
 
       assert {"is invalid", _} = errors[:redirect_uri]
@@ -137,6 +137,7 @@ defmodule ExOauth2Provider.AccessGrants.AccessGrantTest do
                    resource_owner: user
                  },
                  attrs,
+                 app,
                  otp_app: :ex_oauth2_provider
                )
                |> Changeset.put_change(:token, grant.token)
@@ -160,7 +161,7 @@ defmodule ExOauth2Provider.AccessGrants.AccessGrantTest do
                  application: app,
                  resource_owner: user
                }
-               |> AccessGrant.changeset(attrs, otp_app: :ex_oauth2_provider)
+               |> AccessGrant.changeset(attrs, app, opt_app: :ex_oauth2_provider)
                |> Changeset.apply_action(:validate)
 
       assert grant.scopes == "read write"
@@ -176,7 +177,7 @@ defmodule ExOauth2Provider.AccessGrants.AccessGrantTest do
                  application: app,
                  resource_owner: user
                }
-               |> AccessGrant.changeset(attrs, otp_app: :ex_oauth2_provider)
+               |> AccessGrant.changeset(attrs, app, opt_app: :ex_oauth2_provider)
                |> Changeset.apply_action(:validate)
 
       assert {~s(not in permitted scopes list: "public read write"), _} = errors[:scopes]
@@ -198,7 +199,10 @@ defmodule ExOauth2Provider.AccessGrants.AccessGrantTest do
                  application: app,
                  resource_owner: user
                }
-               |> AccessGrant.changeset(attrs, otp_app: :ex_oauth2_provider, pkce: :enabled)
+               |> AccessGrant.changeset(attrs, app,
+                 opt_app: :ex_oauth2_provider,
+                 pkce: :all_methods
+               )
                |> Changeset.apply_action(:validate)
 
       assert {"can't be blank", _} = errors[:code_challenge]
@@ -223,7 +227,10 @@ defmodule ExOauth2Provider.AccessGrants.AccessGrantTest do
                    application: app,
                    resource_owner: user
                  }
-                 |> AccessGrant.changeset(attrs, otp_app: :ex_oauth2_provider, pkce: :enabled)
+                 |> AccessGrant.changeset(attrs, app,
+                   opt_app: :ex_oauth2_provider,
+                   pkce: :all_methods
+                 )
                  |> Changeset.apply_action(:validate)
 
         assert grant.code_challenge == challenge
@@ -247,7 +254,10 @@ defmodule ExOauth2Provider.AccessGrants.AccessGrantTest do
                  application: app,
                  resource_owner: user
                }
-               |> AccessGrant.changeset(attrs, otp_app: :ex_oauth2_provider, pkce: :enabled)
+               |> AccessGrant.changeset(attrs, app,
+                 opt_app: :ex_oauth2_provider,
+                 pkce: :all_methods
+               )
                |> Changeset.apply_action(:validate)
 
       refute Keyword.has_key?(errors, :code_challenge)
