@@ -43,7 +43,7 @@ defmodule Mix.Tasks.ExOauth2Provider.AddPkceToApplications do
 
     def change do
       alter table(:<%= migration.table %>) do
-        add :pkce, :string
+        add :pkce, :string, null: false, default: "disabled"
       end
     end
   end
