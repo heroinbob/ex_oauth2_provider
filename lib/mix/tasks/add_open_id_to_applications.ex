@@ -1,14 +1,14 @@
-defmodule Mix.Tasks.ExOauth2Provider.AddPkceToApplications do
-  @shortdoc "Generates migration for adding PKCE field to Applications"
+defmodule Mix.Tasks.ExOauth2Provider.AddOpenIdToApplications do
+  @shortdoc "Generates migration for adding an OpenID field to Applications"
 
   @moduledoc """
-  Generates a migration file that adds the PKCE field to Applications.
+  Generates a migration file that adds the OpenID field to Applications.
 
       # Update the default table which is `oauth_applications`
-      mix ex_oauth2_provider.add_pkce_to_applications -r MyApp.Repo
+      mix ex_oauth2_provider.add_open_id_to_applications -r MyApp.Repo
 
       # Update your custom table name if you used another one
-      mix ex_oauth2_provider.add_pkce_to_applications -r MyApp.Repo --table some_other_name
+      mix ex_oauth2_provider.add_open_id_to_applications -r MyApp.Repo --table some_other_name
 
   This generator will add the oauth2 migration file in `priv/repo/migrations`.
 
@@ -31,10 +31,10 @@ defmodule Mix.Tasks.ExOauth2Provider.AddPkceToApplications do
   """
   use Mix.Tasks.ExOauth2Provider.MigrationTask
 
-  @context_name "AddOauthPkceToApplications"
-  @switches [table: :string]
+  @context_name "AddOpenIdToApplications"
   @default_opts [table: "oauth_applications"]
-  @mix_task "ex_oauth2_provider.add_pkce_to_applications"
+  @mix_task "ex_oauth2_provider.add_open_id_to_applications"
+  @switches [table: :string]
 
   @template """
     defmodule <%= inspect migration.repo %>.Migrations.<%= migration.context_name %> do
@@ -42,7 +42,7 @@ defmodule Mix.Tasks.ExOauth2Provider.AddPkceToApplications do
 
     def change do
       alter table(:<%= migration.table %>) do
-        add :pkce, :string, null: false, default: "disabled"
+        add :is_openid_enabled, :boolean, null: false, default: false
       end
     end
   end
