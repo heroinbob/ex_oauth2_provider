@@ -29,6 +29,8 @@ defmodule Mix.Tasks.ExOauth2Provider.AddOpenIdToApplications do
     * `-r`, `--repo` - the repo module
     * `--table` - The name of the table to modify
   """
+  use Mix.Task
+
   import Mix.Tasks.ExOauth2Provider.MigrationTask
 
   @context_name "AddOpenIdToApplications"
@@ -53,10 +55,7 @@ defmodule Mix.Tasks.ExOauth2Provider.AddOpenIdToApplications do
     disallow_in_umbrella!(@mix_task)
 
     args
-    |> parse_args(
-      @switches,
-      @default_opts
-    )
+    |> parse_args(@switches, @default_opts)
     |> Map.merge(%{
       command_line_args: args,
       context_name: @context_name,

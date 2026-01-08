@@ -31,18 +31,19 @@ defmodule Mix.Tasks.ExOauth2Provider.AddPkceToApplications do
   """
   use Mix.Task
 
-  alias Mix.{Ecto, ExOauth2Provider, ExOauth2Provider.Migration}
+  import Mix.Tasks.ExOauth2Provider.MigrationTask
 
+  @context_name "AddPkceToApplications"
   @switches [table: :string]
   @default_opts [table: "oauth_applications"]
   @mix_task "ex_oauth2_provider.add_pkce_to_applications"
 
   @template """
-  defmodule <%= inspect migration.repo %>.Migrations.AddOauthPkceToApplications do
+    defmodule <%= inspect repo %>.Migrations.<%= context_name %> do
     use Ecto.Migration
 
     def change do
-      alter table(:<%= migration.table %>) do
+      alter table(:<%= table %>) do
         add :pkce, :string, null: false, default: "disabled"
       end
     end
@@ -51,38 +52,15 @@ defmodule Mix.Tasks.ExOauth2Provider.AddPkceToApplications do
 
   @impl true
   def run(args) do
-    ExOauth2Provider.no_umbrella!(@mix_task)
+    disallow_in_umbrella!(@mix_task)
 
     args
-    |> ExOauth2Provider.parse_options(@switches, @default_opts)
-    |> parse()
-    |> create_file(args)
-  end
-
-  defp parse({config, _parsed, _invalid}), do: config
-
-  defp create_file(config, args) do
-    args
-    |> Ecto.parse_repo()
-    |> Enum.map(&ensure_repo(&1, args))
-    |> Enum.map(&Map.put(config, :repo, &1))
-    |> Enum.each(&create_file/1)
-  end
-
-  defp create_file(%{repo: repo, table: table}) do
-    content =
-      EEx.eval_string(
-        @template,
-        migration: %{
-          repo: repo,
-          table: table
-        }
-      )
-
-    Migration.create_migration_file(repo, "AddOauthPkceToApplications", content)
-  end
-
-  defp ensure_repo(repo, args) do
-    Ecto.ensure_repo(repo, args ++ ~w(--no-deps-check))
+    |> parse_args(@switches, @default_opts)
+    |> Map.merge(%{
+      command_line_args: args,
+      context_name: @context_name,
+      template: @template
+    })
+    |> create_migration_file()
   end
 end
