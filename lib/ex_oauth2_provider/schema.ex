@@ -65,6 +65,16 @@ defmodule ExOauth2Provider.Schema do
         {:has_many, name, queryable, defaults} ->
           has_many(name, queryable, defaults)
       end)
+
+      unquote(module).embeds()
+      |> Enum.each(fn %{kind: kind, name: field, struct: struct} = embed ->
+        options = Map.get(embed, :options, [])
+
+        case kind do
+          :many -> embeds_many(field, struct, options)
+          :one -> embeds_one(field, struct, options)
+        end
+      end)
     end
   end
 

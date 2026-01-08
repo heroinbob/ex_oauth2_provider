@@ -46,6 +46,7 @@ defmodule ExOauth2Provider.Mixfile do
       {:credo, "~> 1.7", only: [:dev, :test]},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
       {:ex_doc, ">= 0.0.0", only: :dev},
+      {:ex_machina, "~> 2.8.0", only: :test},
       {:ecto_sql, "~> 3.13", only: [:dev, :test]},
       {:plug_cowboy, "~> 2.7", only: :test},
       {:postgrex, "~> 0.21", only: :test}

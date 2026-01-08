@@ -1,8 +1,11 @@
 defmodule ExOauth2Provider.Test.Fixtures do
   @moduledoc false
 
+  use ExMachina.Ecto, repo: Dummy.Repo
+
   alias ExOauth2Provider.{
     AccessTokens,
+    Applications.OpenIdSettings,
     Test.PKCE
   }
 
@@ -20,6 +23,29 @@ defmodule ExOauth2Provider.Test.Fixtures do
     plain: "plain",
     s256: "S256"
   }
+
+  def application_factory do
+    %OauthApplication{
+      name: "OAuth Application",
+      owner: build(:user),
+      redirect_uri: "urn:ietf:wg:oauth:2.0:oob",
+      scopes: "public read write",
+      secret: "secret",
+      uid: "test"
+    }
+  end
+
+  def open_id_settings_factory do
+    %OpenIdSettings{
+      enforcement_policy: :never
+    }
+  end
+
+  def user_factory do
+    %User{email: "ima@user.com"}
+  end
+
+  # === NON ExMachina stuff - from the way back when ===
 
   def resource_owner(attrs \\ []) do
     attrs = Keyword.merge([email: "foo@example.com"], attrs)
