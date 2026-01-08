@@ -49,12 +49,6 @@ defmodule Mix.Tasks.ExOauth2Provider.AddPkceFields do
 
   @impl true
   def run(args) do
-    # ExOauth2Provider.no_umbrella!(@mix_task)
-    #
-    # args
-    # |> ExOauth2Provider.parse_options(@switches, @default_opts)
-    # |> parse()
-    # |> create_file(args)
     disallow_in_umbrella!(@mix_task)
 
     args
