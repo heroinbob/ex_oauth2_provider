@@ -52,6 +52,8 @@ defmodule ExOauth2Provider.AccessGrants.AccessGrant do
     ]
   end
 
+  def embeds, do: []
+
   @doc false
   def indexes() do
     [
