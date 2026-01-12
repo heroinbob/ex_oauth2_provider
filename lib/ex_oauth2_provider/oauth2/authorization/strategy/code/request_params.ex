@@ -86,7 +86,6 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParams do
       client.scopes
       |> Scopes.to_list()
       |> Scopes.default_to_server_scopes(config)
-      |> dbg
 
     case Scopes.all?(server_scopes, scopes) do
       true -> :ok
