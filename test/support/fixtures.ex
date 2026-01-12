@@ -6,13 +6,15 @@ defmodule ExOauth2Provider.Test.Fixtures do
   alias ExOauth2Provider.{
     AccessTokens,
     OpenId.OpenIdSettings,
-    Test.PKCE
+    Test.PKCE,
+    Utils
   }
 
   alias Dummy.{
     OauthApplications.OauthApplication,
     OauthAccessGrants.OauthAccessGrant,
     OauthDeviceGrants.OauthDeviceGrant,
+    OauthAccessTokens.OauthAccessToken,
     Repo,
     Users.User
   }
@@ -23,6 +25,17 @@ defmodule ExOauth2Provider.Test.Fixtures do
     plain: "plain",
     s256: "S256"
   }
+
+  def access_token_factory do
+    %OauthAccessToken{
+      expires_in: 300,
+      previous_refresh_token: nil,
+      refresh_token: nil,
+      revoked_at: nil,
+      scopes: "public read write",
+      token: Utils.generate_token()
+    }
+  end
 
   def application_factory do
     %OauthApplication{

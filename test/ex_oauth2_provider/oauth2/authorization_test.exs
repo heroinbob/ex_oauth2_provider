@@ -308,5 +308,27 @@ defmodule ExOauth2Provider.AuthorizationTest do
       assert Authorization.deny(resource_owner, request, config) ==
                {:error, @invalid_request, :bad_request}
     end
+
+    test "supports OpenID when enabled", %{resource_owner: owner} do
+      %{id: app_id, uid: client_id} =
+        Fixtures.insert(
+          :application,
+          open_id_settings: Fixtures.build(:open_id_settings, enforcement_policy: :always),
+          scopes: "public read write openid"
+        )
+
+      request = Map.merge(@valid_request, %{"client_id" => client_id, "scope" => "openid"})
+
+      assert Authorization.deny(owner, request, @config) ==
+               {:error, @access_denied, :unauthorized}
+
+      request = Map.merge(@valid_request, %{"client_id" => client_id, "scope" => "test-fail"})
+
+      assert {
+               :error,
+               %{error: :invalid_scope},
+               :unprocessable_entity
+             } = Authorization.deny(owner, request, @config)
+    end
   end
 end
