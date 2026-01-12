@@ -37,7 +37,7 @@ defmodule ExOauth2Provider.Applications.Application do
       end
   """
 
-  alias ExOauth2Provider.Applications.OpenIdSettings
+  alias ExOauth2Provider.OpenId.OpenIdSettings
   alias ExOauth2Provider.PKCE
 
   @type t :: Ecto.Schema.t()

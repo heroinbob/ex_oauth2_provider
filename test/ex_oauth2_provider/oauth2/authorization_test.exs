@@ -33,10 +33,15 @@ defmodule ExOauth2Provider.AuthorizationTest do
   @config [otp_app: :ex_oauth2_provider]
 
   setup do
-    user = Fixtures.resource_owner()
+    user = Fixtures.insert(:user)
 
     application =
-      Fixtures.application(resource_owner: user, uid: @client_id, secret: @client_secret)
+      Fixtures.insert(
+        :application,
+        owner: user,
+        uid: @client_id,
+        secret: @client_secret
+      )
 
     {:ok, %{resource_owner: user, application: application}}
   end
@@ -149,6 +154,24 @@ defmodule ExOauth2Provider.AuthorizationTest do
       assert {:error, %{error: :invalid_request}, _bad_request} =
                Authorization.preauthorize(owner, request, config)
     end
+
+    test "supports OpenID when enabled", %{resource_owner: owner} do
+      %{id: app_id, uid: client_id} =
+        Fixtures.insert(
+          :application,
+          open_id_settings: Fixtures.build(:open_id_settings, enforcement_policy: :always),
+          scopes: "public read write openid"
+        )
+
+      request = Map.merge(@valid_request, %{"client_id" => client_id, "scope" => "openid"})
+
+      assert {:ok, %OauthApplication{id: ^app_id}, ~w[openid]} =
+               Authorization.preauthorize(
+                 owner,
+                 request,
+                 @config
+               )
+    end
   end
 
   describe "authorize/3" do
@@ -201,6 +224,24 @@ defmodule ExOauth2Provider.AuthorizationTest do
 
       {:error, %{error: :invalid_request}, _bad_request} =
         Authorization.authorize(owner, request, config)
+    end
+
+    test "supports OpenID when enabled", %{resource_owner: owner} do
+      %{id: app_id, uid: client_id} =
+        Fixtures.insert(
+          :application,
+          open_id_settings: Fixtures.build(:open_id_settings, enforcement_policy: :always),
+          scopes: "public read write openid"
+        )
+
+      request = Map.merge(@valid_request, %{"client_id" => client_id, "scope" => "openid"})
+
+      assert {:native_redirect, %{code: _code}} =
+               Authorization.authorize(
+                 owner,
+                 request,
+                 @config
+               )
     end
   end
 

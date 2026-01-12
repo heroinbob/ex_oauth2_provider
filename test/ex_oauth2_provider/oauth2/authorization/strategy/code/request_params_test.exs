@@ -74,8 +74,8 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParamsTest do
 
   describe "validate/2" do
     test "returns :ok when the authorization context is valid" do
-      owner = Fixtures.resource_owner()
-      application = Fixtures.application(resource_owner: owner)
+      owner = Fixtures.insert(:user)
+      application = Fixtures.insert(:application, owner: owner)
 
       context =
         Fixtures.authorization_request_context(
@@ -91,8 +91,8 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParamsTest do
     end
 
     test "returns :ok when the authorization context is valid with PKCE enabled" do
-      owner = Fixtures.resource_owner()
-      application = Fixtures.application(resource_owner: owner)
+      owner = Fixtures.insert(:user)
+      application = Fixtures.insert(:application, owner: owner)
 
       context =
         Fixtures.authorization_request_context(
@@ -110,7 +110,7 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParamsTest do
     end
 
     test "returns :invalid_request when the resource_owner is invalid" do
-      application = Fixtures.application()
+      application = Fixtures.insert(:application)
 
       context =
         Fixtures.authorization_request_context(
@@ -128,8 +128,8 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParamsTest do
     end
 
     test "returns :invalid_redirect_uri when the redirect_uri is invalid" do
-      owner = Fixtures.resource_owner()
-      application = Fixtures.application(resource_owner: owner)
+      owner = Fixtures.insert(:user)
+      application = Fixtures.insert(:application, owner: owner)
 
       context =
         Fixtures.authorization_request_context(
@@ -146,8 +146,8 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParamsTest do
     end
 
     test "returns :invalid_scopes when the scope is invalid" do
-      owner = Fixtures.resource_owner()
-      application = Fixtures.application(resource_owner: owner)
+      owner = Fixtures.insert(:user)
+      application = Fixtures.insert(:application, owner: owner)
 
       context =
         Fixtures.authorization_request_context(
@@ -165,8 +165,8 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParamsTest do
     end
 
     test "returns :invalid_pkce when the PKCE info is invalid" do
-      owner = Fixtures.resource_owner()
-      application = Fixtures.application(resource_owner: owner)
+      owner = Fixtures.insert(:user)
+      application = Fixtures.insert(:application, owner: owner)
 
       context =
         Fixtures.authorization_request_context_with_pkce(
@@ -184,12 +184,13 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParamsTest do
     end
 
     test "supports non-native redirect URI" do
-      owner = Fixtures.resource_owner()
+      owner = Fixtures.insert(:user)
 
       application =
-        Fixtures.application(
+        Fixtures.insert(
+          :application,
           redirect_uri: "https://my-site.com/authorize",
-          resource_owner: owner
+          owner: owner
         )
 
       context =
@@ -206,8 +207,8 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParamsTest do
     end
 
     test "ignores PKCE fields when not enabled" do
-      owner = Fixtures.resource_owner()
-      application = Fixtures.application(resource_owner: owner)
+      owner = Fixtures.insert(:user)
+      application = Fixtures.insert(:application, owner: owner)
 
       # Gave it a bad challenge so it'd fail when PKCE is enabled.
       context =
@@ -218,6 +219,55 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParamsTest do
             "code_challenge_method" => "S256",
             "redirect_uri" => application.redirect_uri,
             "scope" => application.scopes
+          },
+          resource_owner: owner
+        )
+
+      assert RequestParams.validate(context, otp_app: :ex_oauth2_provider) == :ok
+    end
+
+    test "returns an error when there is a problem with OpenID" do
+      owner = Fixtures.build(:user)
+
+      application =
+        Fixtures.insert(
+          :application,
+          open_id_settings: Fixtures.build(:open_id_settings, enforcement_policy: :always),
+          owner: owner,
+          scopes: "public openid read write"
+        )
+
+      context =
+        Fixtures.authorization_request_context(
+          client: application,
+          request: %{
+            "redirect_uri" => application.redirect_uri,
+            "scope" => "read write"
+          },
+          resource_owner: owner
+        )
+
+      assert RequestParams.validate(context, otp_app: :ex_oauth2_provider) ==
+               {:error, :invalid_open_id}
+    end
+
+    test "returns :ok when OpenID is enabled and provided" do
+      owner = Fixtures.build(:user)
+
+      application =
+        Fixtures.insert(
+          :application,
+          open_id_settings: Fixtures.build(:open_id_settings, enforcement_policy: :always),
+          owner: owner,
+          scopes: "public openid read write"
+        )
+
+      context =
+        Fixtures.authorization_request_context(
+          client: application,
+          request: %{
+            "redirect_uri" => application.redirect_uri,
+            "scope" => "read write openid"
           },
           resource_owner: owner
         )

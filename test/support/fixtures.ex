@@ -5,7 +5,7 @@ defmodule ExOauth2Provider.Test.Fixtures do
 
   alias ExOauth2Provider.{
     AccessTokens,
-    Applications.OpenIdSettings,
+    OpenId.OpenIdSettings,
     Test.PKCE
   }
 
@@ -36,9 +36,7 @@ defmodule ExOauth2Provider.Test.Fixtures do
   end
 
   def open_id_settings_factory do
-    %OpenIdSettings{
-      enforcement_policy: :never
-    }
+    %OpenIdSettings{enforcement_policy: :disabled}
   end
 
   def user_factory do
@@ -145,13 +143,15 @@ defmodule ExOauth2Provider.Test.Fixtures do
   """
   @spec authorization_request_context(opts :: list()) :: map()
   def authorization_request_context(opts \\ []) do
+    client = Keyword.get(opts, :client, %OauthApplication{pkce: :disabled})
+    request = Keyword.get(opts, :request, %{})
     opts = Map.new(opts)
 
     Map.merge(
       %{
-        client: %OauthApplication{pkce: :disabled},
-        request: %{},
-        resource_owner: %{}
+        client: client,
+        request: request,
+        resource_owner: build(:user)
       },
       opts
     )

@@ -2,7 +2,7 @@ defmodule ExOauth2Provider.Applications.ApplicationTest do
   use ExOauth2Provider.TestCase
 
   alias ExOauth2Provider.Applications.Application
-  alias ExOauth2Provider.Applications.OpenIdSettings
+  alias ExOauth2Provider.OpenId.OpenIdSettings
   alias ExOauth2Provider.Test.Fixtures
   alias Dummy.OauthApplications.OauthApplication
   alias Dummy.Repo

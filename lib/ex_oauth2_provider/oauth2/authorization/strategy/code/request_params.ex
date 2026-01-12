@@ -5,6 +5,7 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParams do
   alias ExOauth2Provider.{
     Authorization,
     Config,
+    OpenId,
     PKCE,
     RedirectURI,
     Scopes
@@ -57,15 +58,17 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParams do
              :invalid_request
              | :invalid_resource_owner
              | :invalid_redirect_uri
-             | :invalid_scopes
-             | :invalid_pkce}
+             | :invalid_open_id
+             | :invalid_pkce
+             | :invalid_scopes}
   def validate(context, config) do
     # Remember - client ID is validated and set in the contexts as the first step
     # in the flow. So it's guaranteed if this is called.
     with :ok <- validate_resource_owner(context),
          :ok <- validate_redirect_uri(context, config),
-         :ok <- validate_scopes(context, config) do
-      validate_pkce(context, config)
+         :ok <- validate_scopes(context, config),
+         :ok <- validate_pkce(context, config) do
+      validate_open_id(context)
     end
   end
 
@@ -83,6 +86,7 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParams do
       client.scopes
       |> Scopes.to_list()
       |> Scopes.default_to_server_scopes(config)
+      |> dbg
 
     case Scopes.all?(server_scopes, scopes) do
       true -> :ok
@@ -115,6 +119,14 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParams do
       is_required and PKCE.valid?(context, config) -> :ok
       not is_required -> :ok
       true -> {:error, :invalid_pkce}
+    end
+  end
+
+  defp validate_open_id(context) do
+    if OpenId.valid?(context) do
+      :ok
+    else
+      {:error, :invalid_open_id}
     end
   end
 end
