@@ -44,6 +44,17 @@ defmodule ExOauth2Provider.Scopes do
   def from(_source), do: []
 
   @doc """
+  Return the scopes for the given client. If no scopes are explicitly
+  defined then the defaults from the config are returned.
+  """
+  @spec from(client :: map()) :: [String.t()]
+  def from(%{scopes: scopes, secret: _, uid: _}, config) do
+    scopes
+    |> to_list()
+    |> default_to_server_scopes(config)
+  end
+
+  @doc """
   Will default to server scopes if no scopes supplied
   """
   @spec default_to_server_scopes([binary()], keyword()) :: [binary()]

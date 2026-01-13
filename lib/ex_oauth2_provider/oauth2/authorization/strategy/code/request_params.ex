@@ -83,7 +83,7 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParams do
 
   defp validate_scopes(%{request: %{"scope" => scopes}, client: client} = _context, config) do
     request_scopes = Scopes.to_list(scopes)
-    client_scopes = to_client_scopes(client.scopes, config)
+    client_scopes = Scopes.from(client, config)
 
     if Scopes.all?(client_scopes, request_scopes) and
          open_id_safe?(client_scopes, request_scopes) do
@@ -129,11 +129,5 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParams do
     else
       not in_request
     end
-  end
-
-  defp to_client_scopes(scopes, config) do
-    scopes
-    |> Scopes.to_list()
-    |> Scopes.default_to_server_scopes(config)
   end
 end
