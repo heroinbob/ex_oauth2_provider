@@ -26,6 +26,17 @@ defmodule ExOauth2Provider.Test.Fixtures do
     s256: "S256"
   }
 
+  def access_grant_factory do
+    %OauthAccessGrant{
+      application: build(:application),
+      expires_in: 900,
+      redirect_uri: "urn:ietf:wg:oauth:2.0:oob",
+      resource_owner: build(:user),
+      scopes: "read",
+      token: Utils.generate_token()
+    }
+  end
+
   def access_token_factory do
     %OauthAccessToken{
       expires_in: 300,

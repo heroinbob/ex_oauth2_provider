@@ -225,16 +225,51 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParamsTest do
 
       assert RequestParams.validate(context, otp_app: :ex_oauth2_provider) == :ok
     end
+  end
 
-    test "returns an error when there is a problem with OpenID" do
-      owner = Fixtures.build(:user)
+  describe "validate/2 scopes" do
+    test "returns :ok when all requested scopes are invalid" do
+      %{owner: owner} = application = Fixtures.insert(:application, scopes: "read write")
 
+      for scope <- ["read", "write", "write read", "read write"] do
+        context =
+          Fixtures.authorization_request_context(
+            client: application,
+            request: %{
+              "redirect_uri" => application.redirect_uri,
+              "scope" => scope
+            },
+            resource_owner: owner
+          )
+
+        result = RequestParams.validate(context, otp_app: :ex_oauth2_provider)
+
+        assert result == :ok,
+               "expected scope #{inspect(scope)} to be ok but got #{inspect(result)}"
+      end
+    end
+
+    test "returns :invalid_scopes when a requested scope is not supported by the application" do
+      application = Fixtures.insert(:application)
+
+      context =
+        Fixtures.authorization_request_context(
+          client: application,
+          request: %{
+            "redirect_uri" => application.redirect_uri,
+            "scope" => " abc"
+          }
+        )
+
+      assert RequestParams.validate(context, otp_app: :ex_oauth2_provider) ==
+               {:error, :invalid_scopes}
+    end
+
+    test "returns an error when the app has openid scope but it's not in the request" do
       application =
         Fixtures.insert(
           :application,
-          open_id_settings: Fixtures.build(:open_id_settings, enforcement_policy: :always),
-          owner: owner,
-          scopes: "public openid read write"
+          scopes: "openid read write"
         )
 
       context =
@@ -243,36 +278,11 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParamsTest do
           request: %{
             "redirect_uri" => application.redirect_uri,
             "scope" => "read write"
-          },
-          resource_owner: owner
+          }
         )
 
       assert RequestParams.validate(context, otp_app: :ex_oauth2_provider) ==
-               {:error, :invalid_open_id}
-    end
-
-    test "returns :ok when OpenID is enabled and provided" do
-      owner = Fixtures.build(:user)
-
-      application =
-        Fixtures.insert(
-          :application,
-          open_id_settings: Fixtures.build(:open_id_settings, enforcement_policy: :always),
-          owner: owner,
-          scopes: "public openid read write"
-        )
-
-      context =
-        Fixtures.authorization_request_context(
-          client: application,
-          request: %{
-            "redirect_uri" => application.redirect_uri,
-            "scope" => "read write openid"
-          },
-          resource_owner: owner
-        )
-
-      assert RequestParams.validate(context, otp_app: :ex_oauth2_provider) == :ok
+               {:error, :invalid_scopes}
     end
   end
 end

@@ -155,11 +155,10 @@ defmodule ExOauth2Provider.AuthorizationTest do
                Authorization.preauthorize(owner, request, config)
     end
 
-    test "supports OpenID when enabled", %{resource_owner: owner} do
+    test "supports OpenID", %{resource_owner: owner} do
       %{id: app_id, uid: client_id} =
         Fixtures.insert(
           :application,
-          open_id_settings: Fixtures.build(:open_id_settings, enforcement_policy: :always),
           scopes: "public read write openid"
         )
 
@@ -226,11 +225,10 @@ defmodule ExOauth2Provider.AuthorizationTest do
         Authorization.authorize(owner, request, config)
     end
 
-    test "supports OpenID when enabled", %{resource_owner: owner} do
+    test "supports OpenID", %{resource_owner: owner} do
       %{id: app_id, uid: client_id} =
         Fixtures.insert(
           :application,
-          open_id_settings: Fixtures.build(:open_id_settings, enforcement_policy: :always),
           scopes: "public read write openid"
         )
 
@@ -309,11 +307,10 @@ defmodule ExOauth2Provider.AuthorizationTest do
                {:error, @invalid_request, :bad_request}
     end
 
-    test "supports OpenID when enabled", %{resource_owner: owner} do
+    test "supports OpenID", %{resource_owner: owner} do
       %{id: app_id, uid: client_id} =
         Fixtures.insert(
           :application,
-          open_id_settings: Fixtures.build(:open_id_settings, enforcement_policy: :always),
           scopes: "public read write openid"
         )
 

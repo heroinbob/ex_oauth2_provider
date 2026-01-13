@@ -23,6 +23,8 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParams do
   """
   @spec to_access_grant_params(context :: Authorization.context(), config :: list()) :: map()
   def to_access_grant_params(%{request: request} = context, config) do
+    # TODO: Be sure to remove openid from the request scopes if the client
+    # does not support it.
     request
     |> Map.take(~w[redirect_uri scope])
     |> Map.new(fn {k, v} ->
@@ -33,6 +35,8 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParams do
     end)
     |> Map.put(:expires_in, Config.authorization_code_expires_in(config))
     |> maybe_include_pkce(context, config)
+
+    # |> clean_scopes(context, config)
   end
 
   defp maybe_include_pkce(attrs, %{request: request} = context, config) do
@@ -58,7 +62,6 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParams do
              :invalid_request
              | :invalid_resource_owner
              | :invalid_redirect_uri
-             | :invalid_open_id
              | :invalid_pkce
              | :invalid_scopes}
   def validate(context, config) do
@@ -66,9 +69,8 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParams do
     # in the flow. So it's guaranteed if this is called.
     with :ok <- validate_resource_owner(context),
          :ok <- validate_redirect_uri(context, config),
-         :ok <- validate_scopes(context, config),
-         :ok <- validate_pkce(context, config) do
-      validate_open_id(context)
+         :ok <- validate_scopes(context, config) do
+      validate_pkce(context, config)
     end
   end
 
@@ -80,16 +82,14 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParams do
   end
 
   defp validate_scopes(%{request: %{"scope" => scopes}, client: client} = _context, config) do
-    scopes = Scopes.to_list(scopes)
+    request_scopes = Scopes.to_list(scopes)
+    client_scopes = to_client_scopes(client.scopes, config)
 
-    server_scopes =
-      client.scopes
-      |> Scopes.to_list()
-      |> Scopes.default_to_server_scopes(config)
-
-    case Scopes.all?(server_scopes, scopes) do
-      true -> :ok
-      false -> {:error, :invalid_scopes}
+    if Scopes.all?(client_scopes, request_scopes) and
+         open_id_safe?(client_scopes, request_scopes) do
+      :ok
+    else
+      {:error, :invalid_scopes}
     end
   end
 
@@ -121,11 +121,19 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParams do
     end
   end
 
-  defp validate_open_id(context) do
-    if OpenId.valid?(context) do
-      :ok
+  defp open_id_safe?(app_scopes, request_scopes) do
+    in_request = OpenId.in_scope?(request_scopes)
+
+    if OpenId.in_scope?(app_scopes) do
+      in_request
     else
-      {:error, :invalid_open_id}
+      not in_request
     end
+  end
+
+  defp to_client_scopes(scopes, config) do
+    scopes
+    |> Scopes.to_list()
+    |> Scopes.default_to_server_scopes(config)
   end
 end

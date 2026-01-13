@@ -4,13 +4,14 @@ defmodule ExOauth2Provider.Scopes do
   """
 
   alias ExOauth2Provider.Config
+  alias ExOauth2Provider.Schema
 
   @doc """
   Check if required scopes exists in the scopes list
   """
   @spec all?([binary()], [binary()]) :: boolean()
   def all?(scopes, required_scopes) do
-    (required_scopes -- scopes) == []
+    required_scopes -- scopes == []
   end
 
   @doc """
@@ -32,17 +33,22 @@ defmodule ExOauth2Provider.Scopes do
   end
 
   @doc """
+  Return the scopes for the given source. This does not provide the default
+  server scopes if you provide a client.
+  """
+  @spec from(source :: map()) :: [String.t()]
+  def from(%{scopes: scopes}), do: to_list(scopes)
+
+  def from(%{"scope" => scopes} = _request), do: to_list(scopes)
+
+  def from(_source), do: []
+
+  @doc """
   Will default to server scopes if no scopes supplied
   """
   @spec default_to_server_scopes([binary()], keyword()) :: [binary()]
   def default_to_server_scopes([], config), do: Config.server_scopes(config)
   def default_to_server_scopes(server_scopes, _config), do: server_scopes
-
-  @doc """
-  Fetch scopes from an access token
-  """
-  @spec from_access_token(map()) :: [binary()]
-  def from_access_token(access_token), do: to_list(access_token.scopes)
 
   @doc """
   Convert scopes string to list

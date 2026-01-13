@@ -452,24 +452,6 @@ defmodule ExOauth2Provider.Authorization.CodeTest do
                  [{:pkce, :all_methods} | @config]
                )
     end
-
-    test "supports OpenID Connect", %{resource_owner: owner} do
-      app =
-        Fixtures.insert(
-          :application,
-          open_id_settings: %{enforcement_policy: :always},
-          owner: owner,
-          scopes: "openid"
-        )
-
-      request = Map.merge(@valid_request, %{"client_id" => app.uid, "scope" => "openid"})
-
-      assert {:native_redirect, %{code: code}} =
-               Authorization.authorize(owner, request, @config)
-
-      grant = Repo.get_by(OauthAccessGrant, token: code)
-      assert grant.scopes == "openid"
-    end
   end
 
   describe "#authorize/3 when application has no scope" do
@@ -540,20 +522,5 @@ defmodule ExOauth2Provider.Authorization.CodeTest do
                {:redirect,
                 "https://example.com/path?error=access_denied&error_description=The+resource+owner+or+authorization+server+denied+the+request.&param=1&state=40612"}
     end
-  end
-
-  test "supports OpenID Connect", %{resource_owner: owner} do
-    app =
-      Fixtures.insert(
-        :application,
-        open_id_settings: %{enforcement_policy: :always},
-        owner: owner,
-        scopes: "openid"
-      )
-
-    request = Map.merge(@valid_request, %{"client_id" => app.uid, "scope" => "openid"})
-
-    assert Authorization.deny(owner, request, @config) ==
-             {:error, @access_denied, :unauthorized}
   end
 end
