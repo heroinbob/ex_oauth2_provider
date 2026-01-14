@@ -1,14 +1,14 @@
-defmodule Mix.Tasks.ExOauth2Provider.AddOpenIdToApplications do
-  @shortdoc "Generates migration for adding an OpenID field to Applications"
+defmodule Mix.Tasks.ExOauth2Provider.AddOpenIdNonceToGrants do
+  @shortdoc "Generates migration for adding open_id_nonce to access grants table"
 
   @moduledoc """
-  Generates a migration file that adds the OpenID field to Applications.
+  Generates a migration file that adds open_id_nonce to the access grants table.
 
-      # Update the default table which is `oauth_applications`
-      mix ex_oauth2_provider.add_open_id_to_applications -r MyApp.Repo
+      # Update the default table which is `oauth_access_grants`
+      mix ex_oauth2_provider.add_open_id_nonce_to_grants -r MyApp.Repo
 
       # Update your custom table name if you used another one
-      mix ex_oauth2_provider.add_open_id_to_applications -r MyApp.Repo --table some_other_name
+      mix ex_oauth2_provider.add_open_id_nonce_to_grants -r MyApp.Repo --table some_other_name
 
   This generator will add the oauth2 migration file in `priv/repo/migrations`.
 
@@ -33,18 +33,18 @@ defmodule Mix.Tasks.ExOauth2Provider.AddOpenIdToApplications do
 
   import Mix.Tasks.ExOauth2Provider.MigrationTask
 
-  @context_name "AddOpenIdToApplications"
-  @default_opts [table: "oauth_applications"]
-  @mix_task "ex_oauth2_provider.add_open_id_to_applications"
+  @context_name "AddOpenIdNonceToGrants"
+  @default_opts [table: "oauth_access_grants"]
+  @mix_task "ex_oauth2_provider.add_open_id_nonce_to_grants"
   @switches [table: :string]
 
   @template """
-    defmodule <%= inspect repo %>.Migrations.<%= context_name %> do
+    defmodule <%= inspect repo %>.Migrations.AddOpenIdNonceToGrants do
     use Ecto.Migration
 
     def change do
       alter table(:<%= table %>) do
-        add :open_id_settings, :map
+        add :open_id_nonce, :string
       end
     end
   end
