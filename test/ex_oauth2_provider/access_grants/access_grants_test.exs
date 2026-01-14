@@ -147,6 +147,18 @@ defmodule ExOauth2Provider.AccessGrantsTest do
       assert {"can't be blank", _} = changeset.errors[:code_challenge]
       assert {"can't be blank", _} = changeset.errors[:code_challenge_method]
     end
+
+    test "stores the OpenID nonce when present", %{application: application, user: user} do
+      attrs = Map.put(@valid_attrs, :open_id_nonce, "oid-nonce")
+
+      assert {:ok, %OauthAccessGrant{open_id_nonce: "oid-nonce"}} =
+               AccessGrants.create_grant(
+                 user,
+                 application,
+                 attrs,
+                 otp_app: :ex_oauth2_provider
+               )
+    end
   end
 
   describe "create_grant/4 with no application scopes" do

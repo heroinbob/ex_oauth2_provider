@@ -37,6 +37,7 @@ defmodule ExOauth2Provider.AccessGrants.AccessGrant do
       {:code_challenge, :string},
       {:code_challenge_method, Ecto.Enum, [values: [:plain, :s256]]},
       {:expires_in, :integer, null: false},
+      {:open_id_nonce, :string},
       {:redirect_uri, :string, null: false},
       {:revoked_at, :utc_datetime},
       {:scopes, :string},
@@ -117,6 +118,7 @@ defmodule ExOauth2Provider.AccessGrants.AccessGrant do
   defp castable_attrs(application, config) do
     castable = [
       :expires_in,
+      :open_id_nonce,
       :redirect_uri,
       :scopes
     ]

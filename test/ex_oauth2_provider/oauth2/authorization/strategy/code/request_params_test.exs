@@ -28,6 +28,7 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParamsTest do
 
       refute Map.has_key?(grant_params, :code_challenge)
       refute Map.has_key?(grant_params, :code_challenge_method)
+      refute Map.has_key?(grant_params, :open_id_nonce)
     end
 
     test "does not include redirect_uri when it's missing" do
@@ -69,6 +70,38 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParamsTest do
                code_challenge: ^challenge,
                code_challenge_method: "S256"
              } = RequestParams.to_access_grant_params(context, pkce: :all_methods)
+    end
+
+    test "includes OpenID nonce when openid scope is present and nonce is in the request" do
+      context =
+        Fixtures.authorization_request_context(
+          request: %{
+            "nonce" => "imanonce",
+            "redirect_uri" => "test",
+            "scope" => "openid"
+          }
+        )
+
+      assert %{open_id_nonce: "imanonce"} =
+               RequestParams.to_access_grant_params(
+                 context,
+                 otp_app: :ex_oauth2_provider
+               )
+    end
+
+    test "ignores OpenID nonce when openid scope is not present" do
+      context =
+        Fixtures.authorization_request_context(
+          request: %{
+            "nonce" => "imanonce",
+            "redirect_uri" => "test",
+            "scope" => "foo"
+          }
+        )
+
+      refute context
+             |> RequestParams.to_access_grant_params(otp_app: :ex_oauth2_provider)
+             |> Map.has_key?(:open_id_nonce)
     end
   end
 

@@ -23,8 +23,6 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParams do
   """
   @spec to_access_grant_params(context :: Authorization.context(), config :: list()) :: map()
   def to_access_grant_params(%{request: request} = context, config) do
-    # TODO: Be sure to remove openid from the request scopes if the client
-    # does not support it.
     request
     |> Map.take(~w[redirect_uri scope])
     |> Map.new(fn {k, v} ->
@@ -34,12 +32,26 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParams do
       end
     end)
     |> Map.put(:expires_in, Config.authorization_code_expires_in(config))
-    |> maybe_include_pkce(context, config)
-
-    # |> clean_scopes(context, config)
+    |> maybe_add_open_id_nonce(context)
+    |> maybe_add_pkce(context, config)
   end
 
-  defp maybe_include_pkce(attrs, %{request: request} = context, config) do
+  defp maybe_add_open_id_nonce(
+         %{scopes: scopes} = attrs,
+         %{request: request_params} = context
+       ) do
+    nonce = Map.get(request_params, "nonce")
+
+    if OpenId.in_scope?(scopes) and is_binary(nonce) do
+      Map.put(attrs, :open_id_nonce, nonce)
+    else
+      attrs
+    end
+  end
+
+  defp maybe_add_open_id_nonce(attrs, _context), do: attrs
+
+  defp maybe_add_pkce(attrs, %{request: request} = context, config) do
     pkce_attrs =
       if PKCE.required?(context, config) do
         %{
