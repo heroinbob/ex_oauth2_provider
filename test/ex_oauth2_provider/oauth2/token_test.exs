@@ -53,8 +53,7 @@ defmodule ExOauth2Provider.TokenTest do
 
   describe "#grant/2 when grant_type is authorization_code" do
     test "returns the response of AuthorizationCode.grant/2 when valid" do
-      application = Fixtures.application()
-      user = Fixtures.resource_owner()
+      %{owner: user} = application = Fixtures.insert(:application)
 
       Fixtures.access_grant(
         application,
@@ -87,7 +86,7 @@ defmodule ExOauth2Provider.TokenTest do
     end
 
     test "returns validation errors that AuthorizationCode.grant/2 returns" do
-      application = Fixtures.application()
+      application = Fixtures.insert(:application)
 
       assert {:error, %{error: :invalid_grant}, :unprocessable_entity} =
                Token.grant(
@@ -105,8 +104,7 @@ defmodule ExOauth2Provider.TokenTest do
     test "supports PKCE" do
       verifier = PKCE.generate_code_verifier()
       challenge = PKCE.generate_code_challenge(verifier, :s256)
-      application = Fixtures.application()
-      user = Fixtures.resource_owner()
+      %{owner: user} = application = Fixtures.insert(:application)
 
       config = [
         otp_app: :ex_oauth2_provider,
@@ -151,6 +149,32 @@ defmodule ExOauth2Provider.TokenTest do
                  "code_verifier" => "bad-verifier"
                })
                |> Token.grant(config)
+    end
+
+    test "returns the access token and id token when OpenID is enabled" do
+      application = Fixtures.insert(:application, scopes: "openid")
+
+      grant =
+        Fixtures.insert(
+          :access_grant,
+          application: application,
+          resource_owner: application.owner,
+          redirect_uri: application.redirect_uri,
+          scopes: application.scopes
+        )
+
+      payload = %{
+        "client_id" => application.uid,
+        "client_secret" => application.secret,
+        "code" => grant.token,
+        "grant_type" => "authorization_code",
+        "redirect_uri" => application.redirect_uri
+      }
+
+      assert {
+               :ok,
+               %{access_token: _, id_token: _}
+             } = Token.grant(payload, otp_app: :ex_oauth2_provider)
     end
   end
 end

@@ -39,6 +39,8 @@ defmodule ExOauth2Provider.Scopes do
   @spec from(source :: map()) :: [String.t()]
   def from(%{scopes: scopes}), do: to_list(scopes)
 
+  def from(%{scope: scopes}), do: to_list(scopes)
+
   def from(%{"scope" => scopes} = _request), do: to_list(scopes)
 
   def from(_source), do: []

@@ -5,6 +5,7 @@ defmodule ExOauth2Provider.Test.Fixtures do
 
   alias ExOauth2Provider.{
     AccessTokens,
+    OpenId.Claim,
     OpenId.OpenIdSettings,
     Test.PKCE,
     Utils
@@ -42,6 +43,7 @@ defmodule ExOauth2Provider.Test.Fixtures do
       expires_in: 300,
       previous_refresh_token: nil,
       refresh_token: nil,
+      resource_owner: build(:user),
       revoked_at: nil,
       scopes: "public read write",
       token: Utils.generate_token()
@@ -57,6 +59,10 @@ defmodule ExOauth2Provider.Test.Fixtures do
       secret: "secret",
       uid: "test"
     }
+  end
+
+  def open_id_claim_factory do
+    %Claim{name: :test}
   end
 
   def open_id_settings_factory do
@@ -241,6 +247,7 @@ defmodule ExOauth2Provider.Test.Fixtures do
 
   ## Opts
 
+  - `:access_grant` - The OauthAccessGrant to use.
   - `:client` - The OauthApplication to use.
   - `:request` - The request params
   - `:resource_owner` - The resource owner that made the request.
@@ -251,10 +258,10 @@ defmodule ExOauth2Provider.Test.Fixtures do
 
     Map.merge(
       %{
-        access_grant: %OauthAccessGrant{},
-        client: %OauthApplication{pkce: :disabled},
+        access_grant: build(:access_grant),
+        client: build(:application, pkce: :disabled),
         request: %{},
-        resource_owner: %User{}
+        resource_owner: build(:user)
       },
       opts
     )
