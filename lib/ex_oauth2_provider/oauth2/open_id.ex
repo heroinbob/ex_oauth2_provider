@@ -2,8 +2,8 @@ defmodule ExOauth2Provider.OpenId do
   @moduledoc """
   Logic to allow working with Open ID.
   """
+  alias ExOauth2Provider.AccessTokens.AccessToken
   alias ExOauth2Provider.OpenId.IdToken
-  alias ExOauth2Provider.Schema
   alias ExOauth2Provider.Scopes
 
   @type id_token :: %{
@@ -29,7 +29,7 @@ defmodule ExOauth2Provider.OpenId do
   end
 
   @spec generate_id_token(
-          access_token :: Schema.t(),
+          access_token :: AccessToken.t(),
           context :: map(),
           config :: keyword()
         ) :: id_token()

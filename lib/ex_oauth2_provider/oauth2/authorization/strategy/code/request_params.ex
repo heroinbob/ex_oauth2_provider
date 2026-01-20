@@ -96,12 +96,12 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParams do
   defp validate_scopes(
          %{
            is_open_id: is_open_id,
-           request: %{"scope" => scopes},
+           request: request,
            client: client
          } = _context,
          config
        ) do
-    request_scopes = Scopes.to_list(scopes)
+    request_scopes = Scopes.from(request)
     client_scopes = Scopes.from(client, config)
 
     if Scopes.all?(client_scopes, request_scopes) and

@@ -63,11 +63,12 @@ defmodule ExOauth2Provider.Scopes do
   def default_to_server_scopes(server_scopes, _config), do: server_scopes
 
   @doc """
-  Convert scopes string to list
+  Convert scopes string to list. Any unsupported value will result in
+  an empty list.
   """
-  @spec to_list(binary()) :: [binary()]
-  def to_list(nil), do: []
-  def to_list(str), do: String.split(str)
+  @spec to_list(any()) :: [binary()]
+  def to_list(str) when is_binary(str), do: String.split(str)
+  def to_list(_), do: []
 
   @doc """
   Convert scopes list to string
