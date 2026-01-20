@@ -6,8 +6,6 @@ defmodule ExOauth2Provider.OpenIdTest do
   alias ExOauth2Provider.OpenId
   alias ExOauth2Provider.Test.Fixtures
 
-  @unix_epoch ~N[1970-01-01 00:00:00]
-
   describe "fetch_nonce/1" do
     test "returns the nonce when it's present in the request" do
       nonce = "foo"

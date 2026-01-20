@@ -6,9 +6,6 @@ defmodule ExOauth2Provider.OpenId.IdTokenTest do
   alias ExOauth2Provider.OpenId.IdToken
   alias ExOauth2Provider.Test.Fixtures
 
-  @unix_epoch ~N[1970-01-01 00:00:00]
-  @one_week
-
   describe "new/3" do
     test "returns an ID token" do
       token = Fixtures.insert(:access_token)
@@ -30,11 +27,11 @@ defmodule ExOauth2Provider.OpenId.IdTokenTest do
       )
 
       assert %{
-               aud: aud,
+               aud: ^aud,
                auth_time: auth_time,
                exp: expires_at,
                iat: issued_at,
-               iss: iss,
+               iss: ^iss,
                sub: user_id
              } = IdToken.new(token, request_context, [])
 

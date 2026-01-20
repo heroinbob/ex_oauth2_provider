@@ -241,7 +241,7 @@ defmodule ExOauth2Provider.AuthorizationTest do
     end
 
     test "supports OpenID", %{resource_owner: owner} do
-      %{id: app_id, uid: client_id} =
+      %{uid: client_id} =
         Fixtures.insert(
           :application,
           scopes: "public read write openid"
@@ -323,7 +323,7 @@ defmodule ExOauth2Provider.AuthorizationTest do
     end
 
     test "supports OpenID", %{resource_owner: owner} do
-      %{id: app_id, uid: client_id} =
+      %{uid: client_id} =
         Fixtures.insert(
           :application,
           scopes: "public read write openid"

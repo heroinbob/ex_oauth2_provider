@@ -147,7 +147,7 @@ defmodule ExOauth2Provider.Authorization.CodeTest do
   end
 
   describe "preauthorize/3 when openid is in scope and nonce is present" do
-    test "it returns the nonce", %{application: %{id: app_id}, resource_owner: owner} do
+    test "it returns the nonce" do
       %{id: app_id} = app = Fixtures.insert(:application, scopes: "openid test")
       nonce = "ima-cute-lil-nonce"
 
@@ -337,7 +337,6 @@ defmodule ExOauth2Provider.Authorization.CodeTest do
 
       # Ensure that when the client supports PKCE it's being passed in correctly.
       %{pkce: :s256_only} =
-        application =
         application
         |> Changeset.change(pkce: :s256_only)
         |> Repo.update!()

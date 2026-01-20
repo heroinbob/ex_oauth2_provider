@@ -5,7 +5,6 @@ defmodule ExOauth2Provider.OpenId.OpenIdConfigTest do
 
   alias ExOauth2Provider.OpenId.Claim
   alias ExOauth2Provider.OpenId.OpenIdConfig
-  alias ExOauth2Provider.Test.Fixtures
 
   @one_week 3600 * 24 * 7
 

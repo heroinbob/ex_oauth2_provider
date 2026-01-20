@@ -6,7 +6,6 @@ defmodule ExOauth2Provider.Test.Fixtures do
   alias ExOauth2Provider.{
     AccessTokens,
     OpenId.Claim,
-    OpenId.OpenIdSettings,
     Test.PKCE,
     Utils
   }
@@ -63,10 +62,6 @@ defmodule ExOauth2Provider.Test.Fixtures do
 
   def open_id_claim_factory do
     %Claim{name: :test}
-  end
-
-  def open_id_settings_factory do
-    %OpenIdSettings{enforcement_policy: :disabled}
   end
 
   def user_factory do
