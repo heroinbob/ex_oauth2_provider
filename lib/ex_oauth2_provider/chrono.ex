@@ -4,15 +4,18 @@ defmodule ExOauth2Provider.Chrono do
   """
   @unix_epoch ~N[1970-01-01 00:00:00]
 
-  @spec add_time(DateTime.t() | NaiveDateTime.t(), atom()) :: non_neg_integer()
-  def add_time(value, seconds, unit \\ :second)
+  @type any_date_time :: DateTime.t() | NaiveDateTime.t()
 
-  def add_time(%DateTime{} = value, seconds, unit) do
-    DateTime.add(value, seconds, unit)
+  @spec add_time(any_date_time(), integer()) :: any_date_time()
+  @spec add_time(any_date_time(), atom()) :: any_date_time()
+  def add_time(date_time, amount, unit \\ :second)
+
+  def add_time(%DateTime{} = value, amount, unit) do
+    DateTime.add(value, amount, unit)
   end
 
-  def add_time(%NaiveDateTime{} = value, seconds, unit) do
-    NaiveDateTime.add(value, seconds, unit)
+  def add_time(%NaiveDateTime{} = value, amount, unit) do
+    NaiveDateTime.add(value, amount, unit)
   end
 
   @spec to_unix(DateTime.t() | NaiveDateTime.t()) :: non_neg_integer()

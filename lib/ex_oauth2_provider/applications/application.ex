@@ -47,7 +47,7 @@ defmodule ExOauth2Provider.Applications.Application do
   @doc """
   Returns a list of the supported PKCE settings for an app.
   """
-  @spec pkce_settings() :: pkce_setting()
+  @spec pkce_settings() :: [pkce_setting()]
   def pkce_settings, do: @supported_pkce_settings
 
   @doc false

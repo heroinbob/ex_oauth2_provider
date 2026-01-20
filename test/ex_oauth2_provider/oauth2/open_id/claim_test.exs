@@ -4,12 +4,12 @@ defmodule ExOauth2Provider.OpenId.ClaimTest do
   alias ExOauth2Provider.OpenId.Claim
   alias ExOauth2Provider.Test.Fixtures
 
-  describe "get_value_for/2" do
+  describe "get_value_for!/2" do
     test "returns the value for the claim from the source" do
       source = %{united_states_of: :whatever}
       claim = Fixtures.build(:open_id_claim, name: :united_states_of)
 
-      assert Claim.get_value_for(claim, source) == :whatever
+      assert Claim.get_value_for!(claim, source) == :whatever
     end
 
     test "relies on the alias when defined" do
@@ -22,7 +22,7 @@ defmodule ExOauth2Provider.OpenId.ClaimTest do
           name: :fail
         )
 
-      assert Claim.get_value_for(claim, source) == :dum
+      assert Claim.get_value_for!(claim, source) == :dum
     end
   end
 

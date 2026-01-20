@@ -2,7 +2,6 @@ defmodule ExOauth2Provider.Authorization.Utils do
   @moduledoc false
 
   alias ExOauth2Provider.{
-    Authorization,
     Applications,
     OpenId,
     Utils.Error
@@ -10,12 +9,20 @@ defmodule ExOauth2Provider.Authorization.Utils do
 
   alias Ecto.Schema
 
+  # TODO: This should be a struct
+  @type context :: %{
+          client: map(),
+          is_open_id: boolean(),
+          request: map(),
+          resource_owner: map()
+        }
+
   @doc false
   @spec prehandle_request(
           Schema.t() | nil,
           map(),
           keyword()
-        ) :: {:ok, Authorization.context()} | {:error, map()}
+        ) :: {:ok, context()} | {:error, map()}
   def prehandle_request(resource_owner, request, config, opts \\ []) do
     resource_owner
     |> new_params(request)

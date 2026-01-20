@@ -5,7 +5,13 @@ defmodule ExOauth2Provider.Applications do
 
   import Ecto.Query
   alias Ecto.{Changeset, Schema}
-  alias ExOauth2Provider.{AccessTokens, Applications.Application, Config}
+
+  alias ExOauth2Provider.{
+    AccessTokens,
+    AccessTokens.AccessToken,
+    Applications.Application,
+    Config
+  }
 
   @doc """
   Gets a single application by uid.
@@ -151,7 +157,8 @@ defmodule ExOauth2Provider.Applications do
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec create_application(Schema.t(), map(), keyword()) :: {:ok, Application.t()} | {:error, Changeset.t()}
+  @spec create_application(Schema.t(), map(), keyword()) ::
+          {:ok, Application.t()} | {:error, Changeset.t()}
   def create_application(owner, attrs \\ %{}, config \\ []) do
     config
     |> Config.application()
@@ -172,7 +179,8 @@ defmodule ExOauth2Provider.Applications do
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec update_application(Application.t(), map(), keyword()) :: {:ok, Application.t()} | {:error, Changeset.t()}
+  @spec update_application(Application.t(), map(), keyword()) ::
+          {:ok, Application.t()} | {:error, Changeset.t()}
   def update_application(application, attrs, config \\ []) do
     application
     |> Application.changeset(attrs, config)
@@ -191,7 +199,8 @@ defmodule ExOauth2Provider.Applications do
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec delete_application(Application.t(), keyword()) :: {:ok, Application.t()} | {:error, Changeset.t()}
+  @spec delete_application(Application.t(), keyword()) ::
+          {:ok, Application.t()} | {:error, Changeset.t()}
   def delete_application(application, config \\ []) do
     Config.repo(config).delete(application)
   end
@@ -205,11 +214,12 @@ defmodule ExOauth2Provider.Applications do
       {:ok, [ok: %OauthAccessToken{}]}
 
   """
-  @spec revoke_all_access_tokens_for(Application.t(), Schema.t(), keyword()) :: {:ok, [ok: AccessToken.t()]} | {:error, any()}
+  @spec revoke_all_access_tokens_for(Application.t(), Schema.t(), keyword()) ::
+          {:ok, [ok: AccessToken.t()]} | {:error, any()}
   def revoke_all_access_tokens_for(application, resource_owner, config \\ []) do
     repo = Config.repo(config)
 
-    repo.transaction fn ->
+    repo.transaction(fn ->
       config
       |> Config.access_token()
       |> where([a], a.resource_owner_id == ^resource_owner.id)
@@ -217,6 +227,6 @@ defmodule ExOauth2Provider.Applications do
       |> where([o], is_nil(o.revoked_at))
       |> repo.all()
       |> Enum.map(&AccessTokens.revoke(&1, config))
-    end
+    end)
   end
 end

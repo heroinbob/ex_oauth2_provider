@@ -13,11 +13,17 @@ defmodule ExOauth2Provider.OpenId.Claim do
     includes: []
   ]
 
-  def get_value_for(%__MODULE__{alias: alias, name: name}, source) when is_map(source) do
+  @doc """
+  Return the value from the given source that is represented by the given claim.
+  The source MUST have the specified value or an error will be raised.
+  """
+  @spec get_value_for!(t(), source :: map()) :: t()
+  def get_value_for!(%__MODULE__{alias: alias, name: name}, source) when is_map(source) do
     field = alias || name
     Map.fetch!(source, field)
   end
 
+  @spec new(attrs :: map()) :: t()
   def new(%{name: _} = attrs) do
     includes =
       attrs
