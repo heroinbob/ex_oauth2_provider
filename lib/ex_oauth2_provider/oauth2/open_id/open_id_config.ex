@@ -50,10 +50,20 @@ defmodule ExOauth2Provider.OpenId.OpenIdConfig do
   alias ExOauth2Provider.OpenId.Claim
 
   @type t :: %__MODULE__{
-          claims: [Claim.t()]
+          claims: [Claim.t()],
+          id_token_audience: String.t(),
+          id_token_issuer: String.t(),
+          id_token_lifespan: non_neg_integer()
         }
 
-  defstruct claims: []
+  @one_week 60 * 60 * 24 * 7
+
+  defstruct [
+    :id_token_audience,
+    :id_token_issuer,
+    claims: [],
+    id_token_lifespan: @one_week
+  ]
 
   @doc """
   Return the current config. You can pass in overrides optionally.
@@ -61,17 +71,21 @@ defmodule ExOauth2Provider.OpenId.OpenIdConfig do
   @spec get() :: t()
   @spec get(overrides :: keyword()) :: t()
   def get(overrides \\ []) do
-    overrides
-    |> Config.open_id_config()
-    |> new()
-  end
+    config =
+      overrides
+      |> Config.open_id_config()
+      |> Map.reject(fn {_k, v} -> is_nil(v) end)
 
-  defp new(attrs) do
-    claims =
-      attrs
-      |> Map.get(:claims, [])
-      |> Enum.map(&Claim.new/1)
+    audience = Map.fetch!(config, :id_token_audience)
+    claims = config |> Map.get(:claims, []) |> Enum.map(&Claim.new/1)
+    issuer = Map.fetch!(config, :id_token_issuer)
+    lifespan = Map.get(config, :id_token_lifespan, @one_week)
 
-    %__MODULE__{claims: claims}
+    %__MODULE__{
+      claims: claims,
+      id_token_audience: audience,
+      id_token_issuer: issuer,
+      id_token_lifespan: lifespan
+    }
   end
 end

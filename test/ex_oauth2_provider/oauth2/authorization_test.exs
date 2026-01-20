@@ -68,7 +68,10 @@ defmodule ExOauth2Provider.AuthorizationTest do
       application: %{id: app_id},
       resource_owner: owner
     } do
-      assert {:ok, %OauthApplication{id: ^app_id}, ~w[public read write]} =
+      assert {
+               :ok,
+               %{app: %OauthApplication{id: ^app_id}, scopes: ~w[public read write]}
+             } =
                Authorization.preauthorize(
                  owner,
                  @valid_request,
@@ -139,7 +142,13 @@ defmodule ExOauth2Provider.AuthorizationTest do
           }
         )
 
-      assert {:ok, %OauthApplication{id: ^app_id}, ~w[public read write]} =
+      assert {
+               :ok,
+               %{
+                 app: %OauthApplication{id: ^app_id},
+                 scopes: ~w[public read write]
+               }
+             } =
                Authorization.preauthorize(owner, request, config)
 
       request =
@@ -164,7 +173,13 @@ defmodule ExOauth2Provider.AuthorizationTest do
 
       request = Map.merge(@valid_request, %{"client_id" => client_id, "scope" => "openid"})
 
-      assert {:ok, %OauthApplication{id: ^app_id}, ~w[openid]} =
+      assert {
+               :ok,
+               %{
+                 app: %OauthApplication{id: ^app_id},
+                 scopes: ~w[openid]
+               }
+             } =
                Authorization.preauthorize(
                  owner,
                  request,

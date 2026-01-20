@@ -1,219 +1,87 @@
 defmodule ExOauth2Provider.OpenIdTest do
-  use ExOauth2Provider.TestCase, async: true
+  # No async - these tests perform config changes
+  use ExOauth2Provider.TestCase, async: false
+  use ExOauth2Provider.Test.ConfigChanges
 
   alias ExOauth2Provider.OpenId
   alias ExOauth2Provider.Test.Fixtures
 
-  describe "enabled?1" do
-    test "returns true when the openid settings have enforcement of :always" do
-      application =
-        Fixtures.build(
-          :application,
-          open_id_settings: Fixtures.build(:open_id_settings, enforcement_policy: :always)
-        )
+  @unix_epoch ~N[1970-01-01 00:00:00]
 
-      context = Fixtures.authorization_request_context(client: application)
+  describe "fetch_nonce/1" do
+    test "returns the nonce when it's present in the request" do
+      nonce = "foo"
 
-      assert OpenId.enabled?(context) == true
+      assert OpenId.fetch_nonce(%{"nonce" => nonce}) == {:ok, nonce}
     end
 
-    test "returns true when the openid settings have enforcement of :when_in_scope" do
-      application =
-        Fixtures.build(
-          :application,
-          open_id_settings: Fixtures.build(:open_id_settings, enforcement_policy: :when_in_scope)
-        )
-
-      context = Fixtures.authorization_request_context(client: application)
-
-      assert OpenId.enabled?(context) == true
-    end
-
-    test "returns false when the openid settings have enforcement of :disabled" do
-      application =
-        Fixtures.build(
-          :application,
-          open_id_settings: Fixtures.build(:open_id_settings, enforcement_policy: :disabled)
-        )
-
-      context = Fixtures.authorization_request_context(client: application)
-
-      assert OpenId.enabled?(context) == false
-    end
-
-    test "returns false when there are no openid settings" do
-      application = Fixtures.build(:application, open_id_settings: nil)
-      context = Fixtures.authorization_request_context(client: application)
-
-      assert OpenId.enabled?(context) == false
+    test "returns nil when it's not present in the request" do
+      assert OpenId.fetch_nonce(%{"fake" => 123}) == :not_found
     end
   end
 
-  describe "valid?/1 when enforcement_policy is :always" do
-    test "returns true when openid is in scope" do
-      application =
-        Fixtures.insert(
-          :application,
-          open_id_settings: Fixtures.build(:open_id_settings, enforcement_policy: :always),
-          scopes: "public openid read write"
-        )
+  describe "generate_id_token/3" do
+    test "returns the ID token for the given info" do
+      app = Fixtures.insert(:application)
+      %{resource_owner: %{id: user_id}} = token = Fixtures.insert(:access_token, application: app)
+      grant = Fixtures.insert(:access_grant, application: app)
+      context = %{access_grant: grant, client: app}
 
-      context =
-        Fixtures.authorization_request_context(
-          client: application,
-          request: %{
-            "redirect_uri" => application.redirect_uri,
-            "scope" => "openid"
-          }
-        )
-
-      assert OpenId.valid?(context) == true
+      assert %{sub: ^user_id} = OpenId.generate_id_token(token, context, [])
     end
 
-    test "returns false when openid is not in scope" do
-      application =
+    test "passes the given config for open_id" do
+      %{email: email} = user = Fixtures.insert(:user)
+      app = Fixtures.insert(:application)
+
+      token =
         Fixtures.insert(
-          :application,
-          open_id_settings: Fixtures.build(:open_id_settings, enforcement_policy: :always),
-          scopes: "public openid read write"
+          :access_token,
+          application: app,
+          resource_owner: user,
+          scopes: "openid email"
         )
 
-      context =
-        Fixtures.authorization_request_context(
-          client: application,
-          request: %{
-            "redirect_uri" => application.redirect_uri,
-            "scope" => "public"
-          }
-        )
+      grant = Fixtures.insert(:access_grant, application: app)
 
-      assert OpenId.valid?(context) == false
+      context = %{access_grant: grant, client: app}
+
+      assert %{email: ^email} =
+               OpenId.generate_id_token(
+                 token,
+                 context,
+                 open_id: %{
+                   claims: [%{name: :email}],
+                   id_token_audience: "aud",
+                   id_token_issuer: "iss"
+                 }
+               )
     end
   end
 
-  describe "valid?/1 when enforcement_policy is :when_in_scope" do
-    test "returns true when openid is in scope" do
-      application =
-        Fixtures.insert(
-          :application,
-          open_id_settings: Fixtures.build(:open_id_settings, enforcement_policy: :when_in_scope),
-          scopes: "public openid read write"
-        )
-
-      context =
-        Fixtures.authorization_request_context(
-          client: application,
-          request: %{
-            "redirect_uri" => application.redirect_uri,
-            "scope" => "openid"
-          }
-        )
-
-      assert OpenId.valid?(context) == true
+  describe "in_scope?/1" do
+    test "returns true when given a string that has openid in it" do
+      assert OpenId.in_scope?("write openid test") == true
+      assert OpenId.in_scope?("openid") == true
+      assert OpenId.in_scope?("openid test") == true
     end
 
-    test "returns true when openid is not in scope" do
-      application =
-        Fixtures.insert(
-          :application,
-          open_id_settings: Fixtures.build(:open_id_settings, enforcement_policy: :when_in_scope),
-          scopes: "public openid read write"
-        )
-
-      context =
-        Fixtures.authorization_request_context(
-          client: application,
-          request: %{
-            "redirect_uri" => application.redirect_uri,
-            "scope" => "public"
-          }
-        )
-
-      assert OpenId.valid?(context) == true
-    end
-  end
-
-  describe "valid?/1 when enforcement_policy is :disabled" do
-    test "returns true when openid is not in scope" do
-      application =
-        Fixtures.insert(
-          :application,
-          open_id_settings: Fixtures.build(:open_id_settings, enforcement_policy: :disabled),
-          scopes: "public openid read write"
-        )
-
-      context =
-        Fixtures.authorization_request_context(
-          client: application,
-          request: %{
-            "redirect_uri" => application.redirect_uri,
-            "scope" => "public"
-          }
-        )
-
-      assert OpenId.valid?(context) == true
+    test "returns false when given a string without openid in it" do
+      assert OpenId.in_scope?("write test") == false
     end
 
-    test "returns false when openid is in scope" do
-      application =
-        Fixtures.insert(
-          :application,
-          open_id_settings: Fixtures.build(:open_id_settings, enforcement_policy: :disabled),
-          scopes: "public openid read write"
-        )
-
-      context =
-        Fixtures.authorization_request_context(
-          client: application,
-          request: %{
-            "redirect_uri" => application.redirect_uri,
-            "scope" => "openid"
-          }
-        )
-
-      assert OpenId.valid?(context) == true
-    end
-  end
-
-  describe "valid?/1 when enforcement_policy is not defined" do
-    test "returns true when openid is not in scope" do
-      application =
-        Fixtures.insert(
-          :application,
-          open_id_settings: nil,
-          scopes: "public openid read write"
-        )
-
-      context =
-        Fixtures.authorization_request_context(
-          client: application,
-          request: %{
-            "redirect_uri" => application.redirect_uri,
-            "scope" => "public"
-          }
-        )
-
-      assert OpenId.valid?(context) == true
+    test "returns true when given a list that has openid in it" do
+      assert OpenId.in_scope?(~w[openid test write]) == true
+      assert OpenId.in_scope?(~w[test openid write]) == true
+      assert OpenId.in_scope?(~w[openid]) == true
     end
 
-    test "returns false when openid is in scope" do
-      application =
-        Fixtures.insert(
-          :application,
-          open_id_settings: nil,
-          scopes: "public openid read write"
-        )
+    test "returns false when given a list without openid in it" do
+      assert OpenId.in_scope?(~w[test write]) == false
+    end
 
-      context =
-        Fixtures.authorization_request_context(
-          client: application,
-          request: %{
-            "redirect_uri" => application.redirect_uri,
-            "scope" => "openid"
-          }
-        )
-
-      assert OpenId.valid?(context) == false
+    test "returns false when given an unsupported type" do
+      assert OpenId.in_scope?(nil) == false
     end
   end
 end

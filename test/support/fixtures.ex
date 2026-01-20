@@ -180,6 +180,7 @@ defmodule ExOauth2Provider.Test.Fixtures do
     Map.merge(
       %{
         client: client,
+        is_open_id: false,
         request: request,
         resource_owner: build(:user)
       },

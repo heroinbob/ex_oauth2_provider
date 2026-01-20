@@ -298,16 +298,13 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParamsTest do
                {:error, :invalid_scopes}
     end
 
-    test "returns an error when the app has openid scope but it's not in the request" do
-      application =
-        Fixtures.insert(
-          :application,
-          scopes: "openid read write"
-        )
+    test "returns an error when the request is for OpenID but it's not in the request" do
+      application = Fixtures.insert(:application, scopes: "openid read write")
 
       context =
         Fixtures.authorization_request_context(
           client: application,
+          is_open_id: true,
           request: %{
             "redirect_uri" => application.redirect_uri,
             "scope" => "read write"

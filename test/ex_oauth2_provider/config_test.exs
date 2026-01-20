@@ -1,15 +1,9 @@
 defmodule ExOauth2Provider.ConfigTest do
   # Do not use async in here. Some tests make config changes.
   use ExUnit.Case
+  use ExOauth2Provider.Test.ConfigChanges
+
   alias ExOauth2Provider.Config
-
-  setup do
-    config = Application.get_env(:ex_oauth2_provider, ExOauth2Provider)
-
-    on_exit(fn ->
-      Application.put_env(:ex_oauth2_provider, ExOauth2Provider, config)
-    end)
-  end
 
   test "repo/1" do
     assert Config.repo(otp_app: :my_app) == Dummy.Repo

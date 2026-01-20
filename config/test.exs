@@ -10,6 +10,10 @@ config :ex_oauth2_provider, ExOauth2Provider,
     client_credentials
     device_code
   ),
+  open_id: %{
+    id_token_audience: "test-aud",
+    id_token_issuer: "test-iss"
+  },
   optional_scopes: ~w(read write),
   password_auth: {Dummy.Auth, :auth},
   repo: Dummy.Repo,

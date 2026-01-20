@@ -1,7 +1,6 @@
 defmodule ExOauth2Provider.Config do
   @moduledoc false
 
-  alias ExOauth2Provider.OpenId
   alias ExOauth2Provider.PKCE
 
   @type pkce_setting :: PKCE.setting()

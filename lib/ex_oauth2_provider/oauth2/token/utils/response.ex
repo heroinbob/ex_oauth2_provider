@@ -4,16 +4,25 @@ defmodule ExOauth2Provider.Token.Utils.Response do
   alias ExOauth2Provider.Config
   alias ExOauth2Provider.OpenId
 
+  @type access_token :: %{
+          access_token: String.t(),
+          created_at: DateTime.t() | NaiveDateTime.t(),
+          expires_in: non_neg_integer(),
+          refresh_token: String.t(),
+          scope: String.t(),
+          token_type: String.t()
+        }
+
+  @type token_payload ::
+          access_token() | %{access_token: access_token(), id_token: OpenId.id_token()}
+
   @doc false
   @spec response({:ok, map()} | {:error, map()}, keyword()) ::
-          {:ok, map()} | {:error, map(), atom()}
+          {:ok, token_payload()} | {:error, map(), atom()}
   def response(
         {
           :ok,
-          %{
-            access_token: token,
-            client: client
-          } = context
+          %{access_token: token} = context
         },
         config
       ) do
@@ -56,14 +65,18 @@ defmodule ExOauth2Provider.Token.Utils.Response do
     }
   end
 
-  defp maybe_include_id_token(%{scope: scope} = access_token, context, config) do
+  defp maybe_include_id_token(
+         payload,
+         %{access_token: %{scopes: scope} = access_token} = context,
+         config
+       ) do
     if OpenId.in_scope?(scope) do
       %{
-        access_token: access_token,
+        access_token: payload,
         id_token: OpenId.generate_id_token(access_token, context, config)
       }
     else
-      access_token
+      payload
     end
   end
 

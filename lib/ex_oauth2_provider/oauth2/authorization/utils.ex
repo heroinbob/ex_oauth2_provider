@@ -1,7 +1,13 @@
 defmodule ExOauth2Provider.Authorization.Utils do
   @moduledoc false
 
-  alias ExOauth2Provider.{Authorization, Applications, Utils.Error}
+  alias ExOauth2Provider.{
+    Authorization,
+    Applications,
+    OpenId,
+    Utils.Error
+  }
+
   alias Ecto.Schema
 
   @doc false
@@ -42,6 +48,14 @@ defmodule ExOauth2Provider.Authorization.Utils do
       |> Map.put("scope", nil)
       |> Map.merge(request)
 
-    {:ok, Map.put(params, :request, request)}
+    scope = Map.fetch!(request, "scope")
+
+    {
+      :ok,
+      Map.merge(
+        params,
+        %{is_open_id: OpenId.in_scope?(scope), request: request}
+      )
+    }
   end
 end

@@ -37,7 +37,6 @@ defmodule ExOauth2Provider.Applications.Application do
       end
   """
 
-  alias ExOauth2Provider.OpenId.OpenIdSettings
   alias ExOauth2Provider.PKCE
 
   @type t :: Ecto.Schema.t()
@@ -72,15 +71,9 @@ defmodule ExOauth2Provider.Applications.Application do
     ]
   end
 
+  @doc false
   def embeds do
-    [
-      %{
-        kind: :one,
-        name: :open_id_settings,
-        struct: OpenIdSettings,
-        options: [on_replace: :update]
-      }
-    ]
+    []
   end
 
   @doc false
@@ -121,7 +114,6 @@ defmodule ExOauth2Provider.Applications.Application do
     application
     |> maybe_new_application_changeset(params, config)
     |> Changeset.cast(params, [:is_trusted, :name, :pkce, :secret, :redirect_uri, :scopes])
-    |> Changeset.cast_embed(:open_id_settings)
     |> Changeset.validate_required([:name, :pkce, :uid, :redirect_uri])
     |> validate_secret_not_nil()
     |> Scopes.validate_scopes(nil, config)

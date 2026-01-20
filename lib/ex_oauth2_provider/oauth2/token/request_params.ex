@@ -38,7 +38,7 @@ defmodule ExOauth2Provider.Token.AuthorizationCode.RequestParams do
 
   # When OpenID is used then the grant scopes must also contain OpenID.
   # Otherwise the grant must NOT be for an OpenID request.
-  defp valid_scopes?(%{access_grant: grant, client: client} = context, config) do
+  defp valid_scopes?(%{access_grant: grant, client: client} = _context, config) do
     in_grant = grant |> Scopes.from() |> OpenId.in_scope?()
     client_scopes = Scopes.from(client, config)
 

@@ -28,4 +28,12 @@ defmodule ExOauth2Provider.ChronoTest do
       assert Chrono.to_unix(~N[2026-01-14 16:53:00Z]) == 1_768_409_580
     end
   end
+
+  describe "unix_now/0" do
+    test "returns now as a unix time" do
+      # Give it a short range to prevent flakyness.
+      base = DateTime.to_unix(DateTime.utc_now())
+      assert Chrono.unix_now() in base..(base + 2)
+    end
+  end
 end

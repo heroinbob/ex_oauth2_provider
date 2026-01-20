@@ -38,7 +38,7 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParams do
 
   defp maybe_add_open_id_nonce(
          %{scopes: scopes} = attrs,
-         %{request: request_params} = context
+         %{request: request_params} = _context
        ) do
     nonce = Map.get(request_params, "nonce")
 
@@ -93,12 +93,19 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParams do
     end
   end
 
-  defp validate_scopes(%{request: %{"scope" => scopes}, client: client} = _context, config) do
+  defp validate_scopes(
+         %{
+           is_open_id: is_open_id,
+           request: %{"scope" => scopes},
+           client: client
+         } = _context,
+         config
+       ) do
     request_scopes = Scopes.to_list(scopes)
     client_scopes = Scopes.from(client, config)
 
     if Scopes.all?(client_scopes, request_scopes) and
-         open_id_safe?(client_scopes, request_scopes) do
+         open_id_safe?(is_open_id, request_scopes) do
       :ok
     else
       {:error, :invalid_scopes}
@@ -133,10 +140,10 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParams do
     end
   end
 
-  defp open_id_safe?(app_scopes, request_scopes) do
+  defp open_id_safe?(is_open_id, request_scopes) do
     in_request = OpenId.in_scope?(request_scopes)
 
-    if OpenId.in_scope?(app_scopes) do
+    if is_open_id do
       in_request
     else
       not in_request

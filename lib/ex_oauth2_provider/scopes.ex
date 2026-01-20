@@ -4,7 +4,6 @@ defmodule ExOauth2Provider.Scopes do
   """
 
   alias ExOauth2Provider.Config
-  alias ExOauth2Provider.Schema
 
   @doc """
   Check if required scopes exists in the scopes list

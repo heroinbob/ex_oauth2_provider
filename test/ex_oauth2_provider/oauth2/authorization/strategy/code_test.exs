@@ -81,8 +81,10 @@ defmodule ExOauth2Provider.Authorization.CodeTest do
 
       assert {
                :ok,
-               %OauthApplication{id: ^app_id},
-               ^expected_scopes
+               %{
+                 app: %OauthApplication{id: ^app_id},
+                 scopes: ^expected_scopes
+               }
              } = Authorization.preauthorize(resource_owner, @valid_request, @config)
     end
 
@@ -102,8 +104,10 @@ defmodule ExOauth2Provider.Authorization.CodeTest do
 
       assert {
                :ok,
-               %OauthApplication{id: ^app_id},
-               ^expected_scopes
+               %{
+                 app: %OauthApplication{id: ^app_id},
+                 scopes: ^expected_scopes
+               }
              } = Authorization.preauthorize(resource_owner, @valid_request, @config)
 
       QueryHelpers.change!(access_token, scopes: "app:read app:write")
@@ -112,8 +116,10 @@ defmodule ExOauth2Provider.Authorization.CodeTest do
 
       assert {
                :ok,
-               %OauthApplication{id: ^app_id},
-               ^expected_scopes
+               %{
+                 app: %OauthApplication{id: ^app_id},
+                 scopes: ^expected_scopes
+               }
              } = Authorization.preauthorize(resource_owner, request, @config)
     end
 
@@ -125,8 +131,10 @@ defmodule ExOauth2Provider.Authorization.CodeTest do
 
       assert {
                :ok,
-               %OauthApplication{id: ^app_id},
-               ["app:read"]
+               %{
+                 app: %OauthApplication{id: ^app_id},
+                 scopes: ["app:read"]
+               }
              } = Authorization.preauthorize(resource_owner, request, @config)
     end
 
@@ -135,6 +143,28 @@ defmodule ExOauth2Provider.Authorization.CodeTest do
 
       assert Authorization.preauthorize(resource_owner, request, @config) ==
                {:error, @invalid_scope, :unprocessable_entity}
+    end
+  end
+
+  describe "preauthorize/3 when openid is in scope and nonce is present" do
+    test "it returns the nonce", %{application: %{id: app_id}, resource_owner: owner} do
+      %{id: app_id} = app = Fixtures.insert(:application, scopes: "openid test")
+      nonce = "ima-cute-lil-nonce"
+
+      request =
+        Map.merge(
+          @valid_request,
+          %{"client_id" => app.uid, "nonce" => nonce, "scope" => app.scopes}
+        )
+
+      assert {
+               :ok,
+               %{
+                 app: %OauthApplication{id: ^app_id},
+                 nonce: ^nonce,
+                 scopes: ~w[openid test]
+               }
+             } = Authorization.preauthorize(app.owner, request, @config)
     end
   end
 
@@ -151,7 +181,7 @@ defmodule ExOauth2Provider.Authorization.CodeTest do
     } do
       request = Map.merge(@valid_request, %{"scope" => "read"})
 
-      assert {:ok, %OauthApplication{id: ^app_id}, ["read"]} =
+      assert {:ok, %{app: %OauthApplication{id: ^app_id}, scopes: ["read"]}} =
                Authorization.preauthorize(resource_owner, request, @config)
     end
 
@@ -298,7 +328,7 @@ defmodule ExOauth2Provider.Authorization.CodeTest do
           }
         )
 
-      assert {:ok, %OauthApplication{id: ^app_id}, ^expected_scopes} =
+      assert {:ok, %{app: %OauthApplication{id: ^app_id}, scopes: ^expected_scopes}} =
                Authorization.preauthorize(
                  resource_owner,
                  request,
@@ -312,7 +342,7 @@ defmodule ExOauth2Provider.Authorization.CodeTest do
         |> Changeset.change(pkce: :s256_only)
         |> Repo.update!()
 
-      assert {:ok, %OauthApplication{id: ^app_id}, ^expected_scopes} =
+      assert {:ok, %{app: %OauthApplication{id: ^app_id}, scopes: ^expected_scopes}} =
                Authorization.preauthorize(
                  resource_owner,
                  request,
