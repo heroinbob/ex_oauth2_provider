@@ -4,12 +4,14 @@ defmodule ExOauth2Provider.OpenId.Claim do
   @type t :: %__MODULE__{
           alias: atom(),
           includes: [t()],
-          name: standard_claim()
+          name: standard_claim(),
+          value_when_missing: any()
         }
 
   defstruct [
     :alias,
     :name,
+    :value_when_missing,
     includes: []
   ]
 
@@ -18,9 +20,17 @@ defmodule ExOauth2Provider.OpenId.Claim do
   The source MUST have the specified value or an error will be raised.
   """
   @spec get_value_for!(t(), source :: map()) :: t()
-  def get_value_for!(%__MODULE__{alias: alias, name: name}, source) when is_map(source) do
+  def get_value_for!(
+        %__MODULE__{
+          alias: alias,
+          name: name,
+          value_when_missing: default
+        },
+        source
+      )
+      when is_map(source) do
     field = alias || name
-    Map.fetch!(source, field)
+    Map.get(source, field, default)
   end
 
   @spec new(attrs :: map()) :: t()

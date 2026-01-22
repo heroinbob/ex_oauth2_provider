@@ -24,6 +24,20 @@ defmodule ExOauth2Provider.OpenId.ClaimTest do
 
       assert Claim.get_value_for!(claim, source) == :dum
     end
+
+    test "returns nil when the source does not have the attr" do
+      source = %{united_states_of: :whatever}
+      claim = Fixtures.build(:open_id_claim, name: :california, value_when_missing: :state)
+
+      assert Claim.get_value_for!(claim, source) == :state
+    end
+
+    test "returns the provided default when the source doesn't have the attr" do
+      source = %{united_states_of: :whatever}
+      claim = Fixtures.build(:open_id_claim, name: :california)
+
+      assert Claim.get_value_for!(claim, source) == nil
+    end
   end
 
   describe "new/1" do
