@@ -70,7 +70,7 @@ defmodule ExOauth2Provider.TokenTest do
                  expires_in: _,
                  refresh_token: _,
                  scope: "read",
-                 token_type: "bearer"
+                 token_type: "Bearer"
                }
              } =
                Token.grant(

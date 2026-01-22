@@ -41,6 +41,34 @@ defmodule ExOauth2Provider.OpenId.OpenIdConfig do
       ]
     }
 
+  ## Configuration
+
+  The following is a synopsis of configuration keys and their usage.
+
+  ### Required Keys
+
+  * `:id_token_audience`              - The value to put for the `aud` claim in
+                                        the ID token.
+
+  * `:id_token_issuer`                - The value to put for the `iss` claim in
+                                        the ID token.
+
+  * `:id_token_signing_key_algorithm` - The algorithm to use when signing.
+                                        The key represented by the pem
+                                        should rely on this algorithm.
+
+  * `:id_token_signing_key_pem`       - The private key pem content. This
+                                        will be converted to a JOSE.JWK.
+
+  ### Optional Keys
+  * `:claims`                  - A map of claims that should be included.
+
+  * `:id_token_lifespan`       - The number of seconds that the ID token is
+                                 valid for. Default is one week.
+
+  * `:id_token_signing_key_id` - When defined the kid attribute will be
+                                 added to the JWS header.
+
   ## TODO
 
   * Add a global enforcement policy to control it's use globally.
@@ -53,7 +81,10 @@ defmodule ExOauth2Provider.OpenId.OpenIdConfig do
           claims: [Claim.t()],
           id_token_audience: String.t(),
           id_token_issuer: String.t(),
-          id_token_lifespan: non_neg_integer()
+          id_token_lifespan: non_neg_integer(),
+          id_token_signing_key: JOSE.JWK.t(),
+          id_token_signing_key_algorithm: String.t(),
+          id_token_signing_key_id: String.t() | nil
         }
 
   @one_week 60 * 60 * 24 * 7
@@ -61,6 +92,9 @@ defmodule ExOauth2Provider.OpenId.OpenIdConfig do
   defstruct [
     :id_token_audience,
     :id_token_issuer,
+    :id_token_signing_key,
+    :id_token_signing_key_algorithm,
+    :id_token_signing_key_id,
     claims: [],
     id_token_lifespan: @one_week
   ]
@@ -76,16 +110,19 @@ defmodule ExOauth2Provider.OpenId.OpenIdConfig do
       |> Config.open_id_config()
       |> Map.reject(fn {_k, v} -> is_nil(v) end)
 
-    audience = Map.fetch!(config, :id_token_audience)
-    claims = config |> Map.get(:claims, []) |> Enum.map(&Claim.new/1)
-    issuer = Map.fetch!(config, :id_token_issuer)
-    lifespan = Map.get(config, :id_token_lifespan, @one_week)
+    signing_key =
+      config
+      |> Map.fetch!(:id_token_signing_key_pem)
+      |> JOSE.JWK.from_pem()
 
     %__MODULE__{
-      claims: claims,
-      id_token_audience: audience,
-      id_token_issuer: issuer,
-      id_token_lifespan: lifespan
+      claims: config |> Map.get(:claims, []) |> Enum.map(&Claim.new/1),
+      id_token_audience: Map.fetch!(config, :id_token_audience),
+      id_token_issuer: Map.fetch!(config, :id_token_issuer),
+      id_token_lifespan: Map.get(config, :id_token_lifespan, @one_week),
+      id_token_signing_key: signing_key,
+      id_token_signing_key_algorithm: Map.fetch!(config, :id_token_signing_key_algorithm),
+      id_token_signing_key_id: Map.get(config, :id_token_signing_key_id)
     }
   end
 end

@@ -40,6 +40,7 @@ defmodule ExOauth2Provider.Mixfile do
   defp deps do
     [
       {:ecto, "~> 3.8"},
+      {:jose, "~> 1.11"},
       {:plug, ">= 1.5.0 and < 2.0.0"},
 
       # Dev and test dependencies

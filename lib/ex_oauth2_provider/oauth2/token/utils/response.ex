@@ -61,7 +61,7 @@ defmodule ExOauth2Provider.Token.Utils.Response do
       # Access Token type: Bearer.
       # @see https://tools.ietf.org/html/rfc6750
       #   The OAuth 2.0 Authorization Framework: Bearer Token Usage
-      token_type: "bearer"
+      token_type: "Bearer"
     }
   end
 

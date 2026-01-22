@@ -13,7 +13,33 @@ defmodule ExOauth2Provider.Test.ConfigChanges do
     end
   end
 
-  def put_env_change(config, app \\ :ex_oauth2_provider, key \\ ExOauth2Provider) do
-    Application.put_env(app, key, config)
+  @doc """
+  Replace the current config with the given changes.
+  """
+  def put_env_change(changes, app \\ :ex_oauth2_provider, key \\ ExOauth2Provider)
+      when is_list(changes) do
+    original = Application.get_env(app, key)
+
+    changed =
+      Enum.reduce(
+        changes,
+        original,
+        fn {k, v}, acc ->
+          Keyword.put(acc, k, v)
+        end
+      )
+
+    Application.put_env(app, key, changed)
+  end
+
+  @doc """
+  Replace values in the existing OpenId config. This allows you to change the open ID
+  config but also retain what already is configured.
+  """
+  def add_open_id_changes(changes, app \\ :ex_oauth2_provider, key \\ ExOauth2Provider) do
+    original = app |> Application.get_env(key) |> Keyword.fetch!(:open_id)
+    changed = Map.merge(original, changes)
+
+    put_env_change([open_id: changed], app, key)
   end
 end

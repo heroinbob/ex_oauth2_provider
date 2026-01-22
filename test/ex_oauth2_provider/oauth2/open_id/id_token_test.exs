@@ -18,13 +18,11 @@ defmodule ExOauth2Provider.OpenId.IdTokenTest do
       request_context = Fixtures.token_request_context()
 
       # Set the lifespan to a known value for the test.
-      put_env_change(
-        open_id: %{
-          id_token_audience: aud,
-          id_token_issuer: iss,
-          id_token_lifespan: 100
-        }
-      )
+      add_open_id_changes(%{
+        id_token_audience: aud,
+        id_token_issuer: iss,
+        id_token_lifespan: 100
+      })
 
       assert %{
                aud: ^aud,
@@ -59,13 +57,11 @@ defmodule ExOauth2Provider.OpenId.IdTokenTest do
 
       request_context = Fixtures.token_request_context()
 
-      put_env_change(
-        open_id: %{
-          id_token_audience: "id-token-aud",
-          id_token_issuer: "id-token-iss",
-          id_token_lifespan: 100
-        }
-      )
+      add_open_id_changes(%{
+        id_token_audience: "id-token-aud",
+        id_token_issuer: "id-token-iss",
+        id_token_lifespan: 100
+      })
 
       assert %{
                auth_time: auth_time,
@@ -86,13 +82,11 @@ defmodule ExOauth2Provider.OpenId.IdTokenTest do
       token = Fixtures.insert(:access_token, scopes: "openid write read email")
       request_context = Fixtures.token_request_context()
 
-      put_env_change(
-        open_id: %{
-          claims: [%{name: :email}],
-          id_token_audience: "id-token-aud",
-          id_token_issuer: "id-token-iss"
-        }
-      )
+      add_open_id_changes(%{
+        claims: [%{name: :email}],
+        id_token_audience: "id-token-aud",
+        id_token_issuer: "id-token-iss"
+      })
 
       assert %{
                aud: _,
@@ -115,18 +109,16 @@ defmodule ExOauth2Provider.OpenId.IdTokenTest do
       user = token.resource_owner |> Map.from_struct() |> Map.put(:email_verified, true)
       token = %{token | resource_owner: user}
 
-      put_env_change(
-        open_id: %{
-          claims: [
-            %{
-              name: :email,
-              includes: [%{name: :email_verified}]
-            }
-          ],
-          id_token_audience: "id-token-aud",
-          id_token_issuer: "id-token-iss"
-        }
-      )
+      add_open_id_changes(%{
+        claims: [
+          %{
+            name: :email,
+            includes: [%{name: :email_verified}]
+          }
+        ],
+        id_token_audience: "id-token-aud",
+        id_token_issuer: "id-token-iss"
+      })
 
       assert %{
                aud: _,
@@ -155,19 +147,17 @@ defmodule ExOauth2Provider.OpenId.IdTokenTest do
 
       token = %{token | resource_owner: user}
 
-      put_env_change(
-        open_id: %{
-          claims: [
-            %{
-              alias: :private_email,
-              name: :email,
-              includes: [%{alias: :is_verified, name: :email_verified}]
-            }
-          ],
-          id_token_audience: "id-token-aud",
-          id_token_issuer: "id-token-iss"
-        }
-      )
+      add_open_id_changes(%{
+        claims: [
+          %{
+            alias: :private_email,
+            name: :email,
+            includes: [%{alias: :is_verified, name: :email_verified}]
+          }
+        ],
+        id_token_audience: "id-token-aud",
+        id_token_issuer: "id-token-iss"
+      })
 
       assert %{
                aud: _,
@@ -198,13 +188,11 @@ defmodule ExOauth2Provider.OpenId.IdTokenTest do
       token = Fixtures.insert(:access_token, scopes: "openid write read")
       request_context = Fixtures.token_request_context()
 
-      put_env_change(
-        open_id: %{
-          claims: [%{name: :email}],
-          id_token_audience: "id-token-aud",
-          id_token_issuer: "id-token-iss"
-        }
-      )
+      add_open_id_changes(%{
+        claims: [%{name: :email}],
+        id_token_audience: "id-token-aud",
+        id_token_issuer: "id-token-iss"
+      })
 
       assert id_token = IdToken.new(token, request_context, [])
 
@@ -229,13 +217,15 @@ defmodule ExOauth2Provider.OpenId.IdTokenTest do
       request_context = Fixtures.token_request_context()
 
       # Set the lifespan to a known value for the test.
-      config = [
-        open_id: %{
+      config =
+        :ex_oauth2_provider
+        |> Application.get_env(ExOauth2Provider)
+        |> Keyword.fetch!(:open_id)
+        |> Map.merge(%{
           id_token_audience: aud,
           id_token_issuer: iss,
           id_token_lifespan: lifespan
-        }
-      ]
+        })
 
       assert %{
                aud: ^aud,
@@ -243,7 +233,7 @@ defmodule ExOauth2Provider.OpenId.IdTokenTest do
                exp: expires_at,
                iat: issued_at,
                iss: ^iss
-             } = IdToken.new(token, request_context, config)
+             } = IdToken.new(token, request_context, open_id: config)
 
       now = DateTime.to_unix(DateTime.utc_now())
 

@@ -5,72 +5,73 @@ defmodule ExOauth2Provider.OpenId.OpenIdConfigTest do
 
   alias ExOauth2Provider.OpenId.Claim
   alias ExOauth2Provider.OpenId.OpenIdConfig
+  alias ExOauth2Provider.Test.Fixtures
 
   @one_week 3600 * 24 * 7
 
   describe "get/1" do
     test "returns a config struct" do
-      put_env_change(
-        open_id: %{
-          id_token_audience: "a",
-          id_token_issuer: "i"
-        }
-      )
+      # This is grabbed using the PEM in the config
+      signing_key = Fixtures.build(:private_rs256_key)
+
+      %{
+        id_token_audience: aud,
+        id_token_issuer: iss,
+        id_token_signing_key_algorithm: algorithm,
+        id_token_signing_key_id: key_id
+      } = get_config()
 
       assert OpenIdConfig.get([]) == %OpenIdConfig{
                claims: [],
-               id_token_audience: "a",
-               id_token_issuer: "i",
-               id_token_lifespan: @one_week
-             }
-    end
-
-    test "returns the config with values pulled from the app config" do
-      put_env_change(
-        open_id: %{
-          claims: [%{name: :fargo}],
-          id_token_audience: "x",
-          id_token_issuer: "y"
-        }
-      )
-
-      assert OpenIdConfig.get([]) == %OpenIdConfig{
-               claims: [%Claim{name: :fargo}],
-               id_token_audience: "x",
-               id_token_issuer: "y"
+               id_token_audience: aud,
+               id_token_issuer: iss,
+               id_token_lifespan: @one_week,
+               id_token_signing_key: signing_key,
+               id_token_signing_key_algorithm: algorithm,
+               id_token_signing_key_id: key_id
              }
     end
 
     test "returns the config with values pulled from the given config" do
-      assert OpenIdConfig.get(
-               open_id: %{
-                 claims: [%{name: :override}],
-                 id_token_audience: "x",
-                 id_token_issuer: "y",
-                 id_token_lifespan: 42
-               }
-             ) == %OpenIdConfig{
+      original_config = get_config()
+
+      changed_config =
+        Map.merge(
+          original_config,
+          %{
+            claims: [%{name: :override}],
+            id_token_audience: "x",
+            id_token_issuer: "y",
+            id_token_lifespan: 42
+          }
+        )
+
+      assert %OpenIdConfig{
                claims: [%Claim{name: :override}],
                id_token_audience: "x",
                id_token_issuer: "y",
                id_token_lifespan: 42
-             }
+             } = OpenIdConfig.get(open_id: changed_config)
     end
 
     test "throws out nil values in the config" do
-      put_env_change(
-        open_id: %{
-          claims: nil,
-          id_token_audience: "a",
-          id_token_issuer: "i",
-          id_token_lifespan: nil
-        }
-      )
+      add_open_id_changes(%{
+        claims: nil,
+        id_token_audience: "a",
+        id_token_issuer: "i",
+        id_token_lifespan: nil
+      })
 
       assert %OpenIdConfig{
                claims: [],
                id_token_lifespan: @one_week
              } = OpenIdConfig.get([])
     end
+  end
+
+  defp get_config do
+    :ex_oauth2_provider
+    |> Application.get_env(ExOauth2Provider)
+    |> Keyword.fetch!(:open_id)
   end
 end
