@@ -71,10 +71,12 @@ defmodule ExOauth2Provider.Token.Utils.Response do
          config
        ) do
     if OpenId.in_scope?(scope) do
-      %{
-        access_token: payload,
-        id_token: OpenId.generate_id_token(access_token, context, config)
-      }
+      signed =
+        access_token
+        |> OpenId.generate_id_token(context, config)
+        |> OpenId.sign_id_token!(config)
+
+      %{access_token: payload, id_token: signed}
     else
       payload
     end

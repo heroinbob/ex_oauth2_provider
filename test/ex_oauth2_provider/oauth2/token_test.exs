@@ -3,6 +3,7 @@ defmodule ExOauth2Provider.TokenTest do
 
   alias ExOauth2Provider.Token
   alias ExOauth2Provider.Test.Fixtures
+  alias ExOauth2Provider.Test.OpenId
   alias ExOauth2Provider.Test.PKCE
 
   @client_id "Jf5rM8hQBc"
@@ -173,8 +174,13 @@ defmodule ExOauth2Provider.TokenTest do
 
       assert {
                :ok,
-               %{access_token: _, id_token: _}
+               %{
+                 access_token: %{access_token: _},
+                 id_token: id_token
+               }
              } = Token.grant(payload, otp_app: :ex_oauth2_provider)
+
+      assert OpenId.signed_jwt?(id_token)
     end
   end
 end

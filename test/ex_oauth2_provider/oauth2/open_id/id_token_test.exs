@@ -5,6 +5,7 @@ defmodule ExOauth2Provider.OpenId.IdTokenTest do
 
   alias ExOauth2Provider.OpenId.IdToken
   alias ExOauth2Provider.Test.Fixtures
+  alias ExOauth2Provider.Test.OpenId
 
   describe "new/3" do
     test "returns an ID token" do
@@ -218,14 +219,14 @@ defmodule ExOauth2Provider.OpenId.IdTokenTest do
 
       # Set the lifespan to a known value for the test.
       config =
-        :ex_oauth2_provider
-        |> Application.get_env(ExOauth2Provider)
-        |> Keyword.fetch!(:open_id)
-        |> Map.merge(%{
-          id_token_audience: aud,
-          id_token_issuer: iss,
-          id_token_lifespan: lifespan
-        })
+        Map.merge(
+          OpenId.get_config(),
+          %{
+            id_token_audience: aud,
+            id_token_issuer: iss,
+            id_token_lifespan: lifespan
+          }
+        )
 
       assert %{
                aud: ^aud,

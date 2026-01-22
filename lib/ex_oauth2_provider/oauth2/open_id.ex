@@ -3,6 +3,7 @@ defmodule ExOauth2Provider.OpenId do
   Logic to allow working with Open ID.
   """
   alias ExOauth2Provider.AccessTokens.AccessToken
+  alias ExOauth2Provider.OpenId.Errors.SigningError
   alias ExOauth2Provider.OpenId.OpenIdConfig
   alias ExOauth2Provider.OpenId.IdToken
   alias ExOauth2Provider.Scopes
@@ -53,9 +54,8 @@ defmodule ExOauth2Provider.OpenId do
   Sign the given ID token. This relies on the configured signing_key,
   algorithm and key ID. See OpenIdConfig for more info.
   """
-  @spec sign_id_token(id_token :: id_token(), opts :: keyword()) ::
-          {:ok, String.t()} | {:error, any()}
-  def sign_id_token(%{iss: _} = id_token, opts \\ []) do
+  @spec sign_id_token!(id_token :: id_token(), opts :: keyword()) :: String.t()
+  def sign_id_token!(%{iss: _} = id_token, opts \\ []) do
     %{
       id_token_signing_key: signing_key,
       id_token_signing_key_algorithm: algorithm,
@@ -69,9 +69,9 @@ defmodule ExOauth2Provider.OpenId do
       |> JOSE.JWT.sign(header, id_token)
       |> JOSE.JWS.compact()
 
-    {:ok, compact_jws}
+    compact_jws
   rescue
-    error -> {:error, error}
+    error -> raise SigningError.new(error)
   end
 
   defp build_signing_header(algorithm, key_id) do

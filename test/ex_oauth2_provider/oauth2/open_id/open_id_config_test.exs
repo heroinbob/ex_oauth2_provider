@@ -6,6 +6,7 @@ defmodule ExOauth2Provider.OpenId.OpenIdConfigTest do
   alias ExOauth2Provider.OpenId.Claim
   alias ExOauth2Provider.OpenId.OpenIdConfig
   alias ExOauth2Provider.Test.Fixtures
+  alias ExOauth2Provider.Test.OpenId
 
   @one_week 3600 * 24 * 7
 
@@ -19,7 +20,7 @@ defmodule ExOauth2Provider.OpenId.OpenIdConfigTest do
         id_token_issuer: iss,
         id_token_signing_key_algorithm: algorithm,
         id_token_signing_key_id: key_id
-      } = get_config()
+      } = OpenId.get_config()
 
       assert OpenIdConfig.get([]) == %OpenIdConfig{
                claims: [],
@@ -33,7 +34,7 @@ defmodule ExOauth2Provider.OpenId.OpenIdConfigTest do
     end
 
     test "returns the config with values pulled from the given config" do
-      original_config = get_config()
+      original_config = OpenId.get_config()
 
       changed_config =
         Map.merge(
@@ -67,11 +68,5 @@ defmodule ExOauth2Provider.OpenId.OpenIdConfigTest do
                id_token_lifespan: @one_week
              } = OpenIdConfig.get([])
     end
-  end
-
-  defp get_config do
-    :ex_oauth2_provider
-    |> Application.get_env(ExOauth2Provider)
-    |> Keyword.fetch!(:open_id)
   end
 end

@@ -1,4 +1,6 @@
 defmodule ExOauth2Provider.Test.ConfigChanges do
+  alias ExOauth2Provider.Test.OpenId
+
   defmacro __using__(_opts) do
     quote do
       import ExOauth2Provider.Test.ConfigChanges
@@ -37,7 +39,7 @@ defmodule ExOauth2Provider.Test.ConfigChanges do
   config but also retain what already is configured.
   """
   def add_open_id_changes(changes, app \\ :ex_oauth2_provider, key \\ ExOauth2Provider) do
-    original = app |> Application.get_env(key) |> Keyword.fetch!(:open_id)
+    original = OpenId.get_config()
     changed = Map.merge(original, changes)
 
     put_env_change([open_id: changed], app, key)

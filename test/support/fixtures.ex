@@ -6,6 +6,7 @@ defmodule ExOauth2Provider.Test.Fixtures do
   alias ExOauth2Provider.{
     AccessTokens,
     OpenId.Claim,
+    Test.OpenId,
     Test.PKCE,
     Utils
   }
@@ -68,9 +69,7 @@ defmodule ExOauth2Provider.Test.Fixtures do
     # Generated via the following command
     # ssh-keygen -t rsa -b 4096 -m PEM -E SHA256 -f test/support/open_id/rsa256_key.pem
     # There is no passphrase.
-    :ex_oauth2_provider
-    |> Application.get_env(ExOauth2Provider)
-    |> Keyword.fetch!(:open_id)
+    OpenId.get_config()
     |> Map.fetch!(:id_token_signing_key_pem)
     |> JOSE.JWK.from_pem()
   end
