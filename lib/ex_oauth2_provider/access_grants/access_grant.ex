@@ -58,6 +58,8 @@ defmodule ExOauth2Provider.AccessGrants.AccessGrant do
   @doc false
   def indexes() do
     [
+      {:code_challenge, true},
+      {:open_id_nonce, true},
       {:token, true}
     ]
   end
@@ -101,6 +103,8 @@ defmodule ExOauth2Provider.AccessGrants.AccessGrant do
     |> Scopes.put_scopes(grant.application.scopes, config)
     |> Scopes.validate_scopes(grant.application.scopes, config)
     |> Changeset.validate_required(required)
+    |> Changeset.unique_constraint(:code_challenge)
+    |> Changeset.unique_constraint(:open_id_nonce)
     |> Changeset.unique_constraint(:token)
   end
 

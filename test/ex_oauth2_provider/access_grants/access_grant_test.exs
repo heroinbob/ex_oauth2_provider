@@ -263,11 +263,10 @@ defmodule ExOauth2Provider.AccessGrants.AccessGrantTest do
       assert {"is invalid", _} = errors[:code_challenge_method]
     end
 
-    test "ensures that code_challenge is unique" do
+    test "requires the open_id_nonce to be unique" do
       challenge = PKCE.generate_code_challenge()
 
-      %{application: app, resource_owner: user} =
-        grant =
+      %{application: app} =
         Fixtures.insert(
           :access_grant,
           code_challenge: challenge,
@@ -275,25 +274,37 @@ defmodule ExOauth2Provider.AccessGrants.AccessGrantTest do
         )
 
       assert {:error, %Changeset{errors: errors}} =
-               %OauthAccessGrant{
-                 application: app,
-                 resource_owner: user
-               }
+               :access_grant
+               |> Fixtures.build(code_challenge: nil)
                |> AccessGrant.changeset(
                  %{
                    code_challenge: challenge,
-                   code_challenge_method: "S256",
-                   expires_in: grant.expires_in,
-                   redirect_uri: grant.redirect_uri
+                   code_challenge_method: "S256"
                  },
                  app,
                  opt_app: :ex_oauth2_provider,
                  pkce: :all_methods
                )
-               |> Changeset.apply_action(:validate)
+               |> Repo.insert()
 
-      raise inspect(errors)
       assert {"has already been taken", _} = errors[:code_challenge]
+    end
+
+    test "requires open_id_nonce to be unique" do
+      nonce = "nonce!"
+      %{application: app} = Fixtures.insert(:access_grant, open_id_nonce: nonce)
+
+      assert {:error, %Changeset{errors: errors}} =
+               :access_grant
+               |> Fixtures.build()
+               |> AccessGrant.changeset(
+                 %{open_id_nonce: nonce},
+                 app,
+                 opt_app: :ex_oauth2_provider
+               )
+               |> Repo.insert()
+
+      assert {"has already been taken", _} = errors[:open_id_nonce]
     end
   end
 end
