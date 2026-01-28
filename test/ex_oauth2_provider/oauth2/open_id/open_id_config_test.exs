@@ -16,7 +16,6 @@ defmodule ExOauth2Provider.OpenId.OpenIdConfigTest do
       signing_key = Fixtures.build(:private_rs256_key)
 
       %{
-        id_token_audience: aud,
         id_token_issuer: iss,
         id_token_signing_key_algorithm: algorithm,
         id_token_signing_key_id: key_id
@@ -24,7 +23,6 @@ defmodule ExOauth2Provider.OpenId.OpenIdConfigTest do
 
       assert OpenIdConfig.get([]) == %OpenIdConfig{
                claims: [],
-               id_token_audience: aud,
                id_token_issuer: iss,
                id_token_lifespan: @one_week,
                id_token_signing_key: signing_key,
@@ -41,7 +39,6 @@ defmodule ExOauth2Provider.OpenId.OpenIdConfigTest do
           original_config,
           %{
             claims: [%{name: :override}],
-            id_token_audience: "x",
             id_token_issuer: "y",
             id_token_lifespan: 42
           }
@@ -49,7 +46,6 @@ defmodule ExOauth2Provider.OpenId.OpenIdConfigTest do
 
       assert %OpenIdConfig{
                claims: [%Claim{name: :override}],
-               id_token_audience: "x",
                id_token_issuer: "y",
                id_token_lifespan: 42
              } = OpenIdConfig.get(open_id: changed_config)
@@ -58,7 +54,6 @@ defmodule ExOauth2Provider.OpenId.OpenIdConfigTest do
     test "throws out nil values in the config" do
       add_open_id_changes(%{
         claims: nil,
-        id_token_audience: "a",
         id_token_issuer: "i",
         id_token_lifespan: nil
       })

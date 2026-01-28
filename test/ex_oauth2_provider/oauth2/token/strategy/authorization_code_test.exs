@@ -40,13 +40,28 @@ defmodule ExOauth2Provider.Token.Strategy.AuthorizationCodeTest do
   }
 
   setup do
-    resource_owner = Fixtures.resource_owner()
-    application = Fixtures.application(uid: @client_id, secret: @client_secret)
+    resource_owner = Fixtures.insert(:user)
+
+    application =
+      Fixtures.insert(
+        :application,
+        uid: @client_id,
+        secret: @client_secret
+      )
+
     {:ok, %{resource_owner: resource_owner, application: application}}
   end
 
   setup %{resource_owner: resource_owner, application: application} do
-    access_grant = Fixtures.access_grant(application, resource_owner, @code, @redirect_uri)
+    access_grant =
+      Fixtures.insert(
+        :access_grant,
+        application: application,
+        redirect_uri: @redirect_uri,
+        resource_owner: resource_owner,
+        token: @code
+      )
+
     {:ok, %{resource_owner: resource_owner, application: application, access_grant: access_grant}}
   end
 
@@ -125,7 +140,16 @@ defmodule ExOauth2Provider.Token.Strategy.AuthorizationCodeTest do
       application: application
     } do
       assert {:ok, body} = Token.grant(@valid_request, otp_app: :ex_oauth2_provider)
-      access_grant = Fixtures.access_grant(application, resource_owner, "new_code", @redirect_uri)
+
+      access_grant =
+        Fixtures.insert(
+          :access_grant,
+          application: application,
+          redirect_uri: @redirect_uri,
+          resource_owner: resource_owner,
+          token: "new_code"
+        )
+
       valid_request = Map.merge(@valid_request, %{"code" => access_grant.token})
       assert {:ok, body2} = Token.grant(valid_request, otp_app: :ex_oauth2_provider)
 
@@ -154,7 +178,7 @@ defmodule ExOauth2Provider.Token.Strategy.AuthorizationCodeTest do
     end
 
     test "returns error when grant owned by another client", %{access_grant: access_grant} do
-      new_application = Fixtures.application(uid: "new_app")
+      new_application = Fixtures.insert(:application, uid: "new_app")
       QueryHelpers.change!(access_grant, application_id: new_application.id)
 
       assert Token.grant(@valid_request, otp_app: :ex_oauth2_provider) ==

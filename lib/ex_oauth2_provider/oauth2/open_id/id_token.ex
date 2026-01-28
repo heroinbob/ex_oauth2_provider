@@ -12,7 +12,6 @@ defmodule ExOauth2Provider.OpenId.IdToken do
 
   Required
 
-  * `:audience`
   * `:issuer`
 
   Optional
@@ -22,7 +21,7 @@ defmodule ExOauth2Provider.OpenId.IdToken do
 
   ## Basic Claims
 
-  * `:aud` - Audience that is the intended recipient.
+  * `:aud` - Audience that is the intended recipient - the Application uid.
   * `:auth_time` - The time (seconds since epoch) that authentication took place.
   * `:exp` - Exp time in number of seconds since epoch.
   * `:iat` - Time the JWT was issued (seconds since epoch)
@@ -79,8 +78,8 @@ defmodule ExOauth2Provider.OpenId.IdToken do
 
   defp build(
          %{
+           client: client,
            config: %OpenIdConfig{
-             id_token_audience: audience,
              id_token_issuer: issuer,
              id_token_lifespan: lifespan
            },
@@ -92,7 +91,7 @@ defmodule ExOauth2Provider.OpenId.IdToken do
     expires_at = created_at + lifespan
 
     %{
-      aud: audience,
+      aud: client.uid,
       auth_time: created_at,
       exp: expires_at,
       iat: created_at,

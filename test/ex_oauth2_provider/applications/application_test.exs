@@ -103,7 +103,8 @@ defmodule ExOauth2Provider.Applications.ApplicationTest do
 
     test "allows is_trusted to be changed" do
       app =
-        Fixtures.application()
+        :application
+        |> Fixtures.insert()
         |> Application.changeset(%{is_trusted: true})
         |> Repo.update!()
 

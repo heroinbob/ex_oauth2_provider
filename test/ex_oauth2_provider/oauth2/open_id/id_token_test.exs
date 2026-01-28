@@ -9,24 +9,22 @@ defmodule ExOauth2Provider.OpenId.IdTokenTest do
 
   describe "new/3" do
     test "returns an ID token" do
-      token = Fixtures.insert(:access_token)
-      aud = "id-token-aud"
+      %{application: %{uid: client_id} = app} = token = Fixtures.insert(:access_token)
       iss = "id-token-iss"
 
       # The timestamps in this test are NaiveDateTime per the schema and DB table
       assert %NaiveDateTime{} = token.inserted_at
 
-      request_context = Fixtures.token_request_context()
+      request_context = Fixtures.token_request_context(%{client: app})
 
       # Set the lifespan to a known value for the test.
       add_open_id_changes(%{
-        id_token_audience: aud,
         id_token_issuer: iss,
         id_token_lifespan: 100
       })
 
       assert %{
-               aud: ^aud,
+               aud: ^client_id,
                auth_time: auth_time,
                exp: expires_at,
                iat: issued_at,
@@ -59,7 +57,6 @@ defmodule ExOauth2Provider.OpenId.IdTokenTest do
       request_context = Fixtures.token_request_context()
 
       add_open_id_changes(%{
-        id_token_audience: "id-token-aud",
         id_token_issuer: "id-token-iss",
         id_token_lifespan: 100
       })
@@ -85,7 +82,6 @@ defmodule ExOauth2Provider.OpenId.IdTokenTest do
 
       add_open_id_changes(%{
         claims: [%{name: :email}],
-        id_token_audience: "id-token-aud",
         id_token_issuer: "id-token-iss"
       })
 
@@ -117,7 +113,6 @@ defmodule ExOauth2Provider.OpenId.IdTokenTest do
             includes: [%{name: :email_verified}]
           }
         ],
-        id_token_audience: "id-token-aud",
         id_token_issuer: "id-token-iss"
       })
 
@@ -156,7 +151,6 @@ defmodule ExOauth2Provider.OpenId.IdTokenTest do
             includes: [%{alias: :is_verified, name: :email_verified}]
           }
         ],
-        id_token_audience: "id-token-aud",
         id_token_issuer: "id-token-iss"
       })
 
@@ -191,7 +185,6 @@ defmodule ExOauth2Provider.OpenId.IdTokenTest do
 
       add_open_id_changes(%{
         claims: [%{name: :email}],
-        id_token_audience: "id-token-aud",
         id_token_issuer: "id-token-iss"
       })
 
@@ -204,32 +197,32 @@ defmodule ExOauth2Provider.OpenId.IdTokenTest do
     test "adds nonce when present" do
       grant = Fixtures.insert(:access_grant, open_id_nonce: "heynow")
       token = Fixtures.insert(:access_token)
-      request_context = Fixtures.token_request_context(access_grant: grant)
+
+      request_context =
+        Fixtures.token_request_context(client: token.application, access_grant: grant)
 
       assert %{nonce: "heynow"} = IdToken.new(token, request_context, [])
     end
 
     test "supports overriding the app config" do
-      token = Fixtures.insert(:access_token)
-      aud = "override-aud"
+      %{application: %{uid: client_id}} = token = Fixtures.insert(:access_token)
       iss = "override-iss"
       lifespan = 42
 
-      request_context = Fixtures.token_request_context()
+      request_context = Fixtures.token_request_context(%{client: token.application})
 
       # Set the lifespan to a known value for the test.
       config =
         Map.merge(
           OpenId.get_config(),
           %{
-            id_token_audience: aud,
             id_token_issuer: iss,
             id_token_lifespan: lifespan
           }
         )
 
       assert %{
-               aud: ^aud,
+               aud: ^client_id,
                auth_time: auth_time,
                exp: expires_at,
                iat: issued_at,

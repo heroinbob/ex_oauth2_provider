@@ -47,9 +47,6 @@ defmodule ExOauth2Provider.OpenId.OpenIdConfig do
 
   ### Required Keys
 
-  * `:id_token_audience`              - The value to put for the `aud` claim in
-                                        the ID token.
-
   * `:id_token_issuer`                - The value to put for the `iss` claim in
                                         the ID token.
 
@@ -79,7 +76,6 @@ defmodule ExOauth2Provider.OpenId.OpenIdConfig do
 
   @type t :: %__MODULE__{
           claims: [Claim.t()],
-          id_token_audience: String.t(),
           id_token_issuer: String.t(),
           id_token_lifespan: non_neg_integer(),
           id_token_signing_key: JOSE.JWK.t(),
@@ -90,7 +86,6 @@ defmodule ExOauth2Provider.OpenId.OpenIdConfig do
   @one_week 60 * 60 * 24 * 7
 
   defstruct [
-    :id_token_audience,
     :id_token_issuer,
     :id_token_signing_key,
     :id_token_signing_key_algorithm,
@@ -117,7 +112,6 @@ defmodule ExOauth2Provider.OpenId.OpenIdConfig do
 
     %__MODULE__{
       claims: config |> Map.get(:claims, []) |> Enum.map(&Claim.new/1),
-      id_token_audience: Map.fetch!(config, :id_token_audience),
       id_token_issuer: Map.fetch!(config, :id_token_issuer),
       id_token_lifespan: Map.get(config, :id_token_lifespan, @one_week),
       id_token_signing_key: signing_key,

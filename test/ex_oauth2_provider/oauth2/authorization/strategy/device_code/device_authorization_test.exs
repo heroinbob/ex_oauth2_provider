@@ -10,7 +10,8 @@ defmodule ExOauth2Provider.Authorization.DeviceCode.DeviceAuthorizationTest do
 
   setup do
     application =
-      Fixtures.application(
+      Fixtures.insert(
+        :application,
         uid: "abc123",
         scopes: "app:read app:write"
       )
@@ -116,7 +117,7 @@ defmodule ExOauth2Provider.Authorization.DeviceCode.DeviceAuthorizationTest do
     end
 
     test "deletes expired grants during successful grant creation", %{application: application} do
-      device_grant = Fixtures.device_grant()
+      device_grant = Fixtures.insert(:device_grant)
 
       inserted_at =
         QueryHelpers.timestamp(

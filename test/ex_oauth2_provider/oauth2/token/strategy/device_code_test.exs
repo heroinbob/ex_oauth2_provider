@@ -11,17 +11,21 @@ defmodule ExOauth2Provider.Token.DeviceCodeTest do
 
   setup do
     application =
-      Fixtures.application(
+      Fixtures.insert(
+        :application,
         uid: "abc123",
         scopes: "app:read app:write",
         secret: ""
       )
 
-    owner = Fixtures.resource_owner()
+    owner = Fixtures.insert(:user)
 
     grant =
-      Fixtures.device_grant(
+      Fixtures.insert(
+        :device_grant,
+        application: nil,
         application_id: application.id,
+        resource_owner: nil,
         resource_owner_id: owner.id,
         user_code: nil
       )
@@ -424,7 +428,8 @@ defmodule ExOauth2Provider.Token.DeviceCodeTest do
       %{application: application, grant: grant, owner: owner} = context
 
       existing_token =
-        Fixtures.access_token(
+        Fixtures.insert(
+          :access_token,
           application: application,
           resource_owner: owner,
           scopes: ""
@@ -449,8 +454,12 @@ defmodule ExOauth2Provider.Token.DeviceCodeTest do
       %{application: application, grant: grant, owner: owner} = context
 
       revoked_token =
-        [application: application, resource_owner: owner, scopes: ""]
-        |> Fixtures.access_token()
+        :access_token
+        |> Fixtures.insert(
+          application: application,
+          resource_owner: owner,
+          scopes: ""
+        )
         |> AccessTokens.revoke!()
 
       request = %{
@@ -471,7 +480,8 @@ defmodule ExOauth2Provider.Token.DeviceCodeTest do
       %{application: application, grant: grant, owner: owner} = context
 
       expired_token =
-        Fixtures.access_token(
+        Fixtures.insert(
+          :access_token,
           application: application,
           resource_owner: owner,
           scopes: ""

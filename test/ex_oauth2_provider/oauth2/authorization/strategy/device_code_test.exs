@@ -9,7 +9,8 @@ defmodule ExOauth2Provider.Authorization.DeviceCodeTest do
 
   setup do
     application =
-      Fixtures.application(
+      Fixtures.insert(
+        :application,
         uid: "abc123",
         scopes: "app:read app:write"
       )
@@ -18,10 +19,9 @@ defmodule ExOauth2Provider.Authorization.DeviceCodeTest do
   end
 
   describe "#authorize/3" do
-    test "invokes the user interaction and approves the device grant", context do
-      %{application: application} = context
-      device_grant = Fixtures.device_grant(application_id: application.id)
-      owner = Fixtures.resource_owner()
+    test "invokes the user interaction and approves the device grant" do
+      device_grant = Fixtures.insert(:device_grant)
+      owner = Fixtures.insert(:user)
 
       request = %{
         "response_type" => "device_code",

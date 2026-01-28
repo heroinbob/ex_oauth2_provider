@@ -198,7 +198,8 @@ defmodule ExOauth2Provider.Authorization.CodeTest do
       resource_owner: resource_owner,
       application: application
     } do
-      Fixtures.access_token(
+      Fixtures.insert(
+        :access_token,
         resource_owner: resource_owner,
         application: application,
         scopes: @valid_request["scope"]

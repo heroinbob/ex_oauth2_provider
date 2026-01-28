@@ -4,7 +4,6 @@ defmodule ExOauth2Provider.Test.Fixtures do
   use ExMachina.Ecto, repo: Dummy.Repo
 
   alias ExOauth2Provider.{
-    AccessTokens,
     OpenId.Claim,
     Test.OpenId,
     Test.PKCE,
@@ -16,11 +15,8 @@ defmodule ExOauth2Provider.Test.Fixtures do
     OauthAccessGrants.OauthAccessGrant,
     OauthDeviceGrants.OauthDeviceGrant,
     OauthAccessTokens.OauthAccessToken,
-    Repo,
     Users.User
   }
-
-  alias Ecto.Changeset
 
   @code_challenge_request_param_lookup %{
     plain: "plain",
@@ -40,8 +36,9 @@ defmodule ExOauth2Provider.Test.Fixtures do
 
   def access_token_factory do
     %OauthAccessToken{
+      application: build(:application),
       expires_in: 300,
-      previous_refresh_token: nil,
+      previous_refresh_token: "",
       refresh_token: nil,
       resource_owner: build(:user),
       revoked_at: nil,
@@ -56,8 +53,18 @@ defmodule ExOauth2Provider.Test.Fixtures do
       owner: build(:user),
       redirect_uri: "urn:ietf:wg:oauth:2.0:oob",
       scopes: "public read write",
-      secret: "secret",
-      uid: "test"
+      secret: Ecto.UUID.generate(),
+      uid: Ecto.UUID.generate()
+    }
+  end
+
+  def device_grant_factory do
+    %OauthDeviceGrant{
+      application: build(:application),
+      device_code: "device-code",
+      expires_in: 900,
+      resource_owner: build(:user),
+      user_code: "user-code"
     }
   end
 
@@ -76,93 +83,6 @@ defmodule ExOauth2Provider.Test.Fixtures do
 
   def user_factory do
     %User{email: "ima@user.com"}
-  end
-
-  # === NON ExMachina stuff - from the way back when ===
-
-  def resource_owner(attrs \\ []) do
-    attrs = Keyword.merge([email: "foo@example.com"], attrs)
-
-    User
-    |> struct()
-    |> Changeset.change(attrs)
-    |> Repo.insert!()
-  end
-
-  def application(attrs \\ []) do
-    resource_owner = Keyword.get(attrs, :resource_owner) || resource_owner()
-
-    attrs =
-      [
-        name: "OAuth Application",
-        owner_id: resource_owner.id,
-        redirect_uri: "urn:ietf:wg:oauth:2.0:oob",
-        scopes: "public read write",
-        secret: "secret",
-        uid: "test"
-      ]
-      |> Keyword.merge(attrs)
-      |> Keyword.drop([:resource_owner])
-
-    %OauthApplication{}
-    |> Changeset.change(attrs)
-    |> Repo.insert!()
-  end
-
-  def access_token(attrs \\ []) do
-    {:ok, access_token} =
-      attrs
-      |> Keyword.get(:resource_owner)
-      |> Kernel.||(resource_owner())
-      |> AccessTokens.create_token(Enum.into(attrs, %{}), otp_app: :ex_oauth2_provider)
-
-    access_token
-  end
-
-  def application_access_token(attrs \\ []) do
-    {:ok, access_token} =
-      attrs
-      |> Keyword.get(:application)
-      |> Kernel.||(application())
-      |> AccessTokens.create_application_token(Enum.into(attrs, %{}),
-        otp_app: :ex_oauth2_provider
-      )
-
-    access_token
-  end
-
-  def access_grant(application, user, code, redirect_uri, overrides \\ []) do
-    attrs =
-      Keyword.merge(
-        [
-          expires_in: 900,
-          redirect_uri: "urn:ietf:wg:oauth:2.0:oob",
-          application_id: application.id,
-          resource_owner_id: user.id,
-          token: code,
-          scopes: "read",
-          redirect_uri: redirect_uri
-        ],
-        overrides
-      )
-
-    %OauthAccessGrant{}
-    |> Changeset.change(attrs)
-    |> Repo.insert!()
-  end
-
-  def device_grant(attrs \\ []) do
-    attrs =
-      [
-        device_code: "device-code",
-        expires_in: 900,
-        user_code: "user-code"
-      ]
-      |> Keyword.merge(attrs)
-
-    %OauthDeviceGrant{}
-    |> Changeset.change(attrs)
-    |> Repo.insert!()
   end
 
   @doc """

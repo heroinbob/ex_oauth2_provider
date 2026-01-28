@@ -259,9 +259,8 @@ defmodule ExOauth2Provider.AuthorizationTest do
   end
 
   describe "authorize_device/3" do
-    test "returns an :ok tuple with the user code", context do
-      %{application: application, resource_owner: resource_owner} = context
-      grant = Fixtures.device_grant(application: application)
+    test "returns an :ok tuple with the user code" do
+      %{resource_owner: resource_owner} = grant = Fixtures.insert(:device_grant)
 
       response =
         resource_owner
