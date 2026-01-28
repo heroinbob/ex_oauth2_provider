@@ -39,7 +39,7 @@ defmodule Mix.Tasks.ExOauth2Provider.AddOpenIdNonceToGrants do
   @switches [table: :string]
 
   @template """
-    defmodule <%= inspect repo %>.Migrations.AddOpenIdNonceToGrants do
+  defmodule <%= inspect repo %>.Migrations.AddOpenIdNonceToGrants do
     use Ecto.Migration
 
     def change do

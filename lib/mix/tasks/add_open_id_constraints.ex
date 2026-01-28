@@ -39,7 +39,7 @@ defmodule Mix.Tasks.ExOauth2Provider.AddOpenIdConstraints do
   @switches [table: :string]
 
   @template """
-    defmodule <%= inspect repo %>.Migrations.AddOpenIdConstraints do
+  defmodule <%= inspect repo %>.Migrations.AddOpenIdConstraints do
     use Ecto.Migration
 
     def change do

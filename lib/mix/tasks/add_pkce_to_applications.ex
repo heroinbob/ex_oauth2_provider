@@ -39,7 +39,7 @@ defmodule Mix.Tasks.ExOauth2Provider.AddPkceToApplications do
   @mix_task "ex_oauth2_provider.add_pkce_to_applications"
 
   @template """
-    defmodule <%= inspect repo %>.Migrations.<%= context_name %> do
+  defmodule <%= inspect repo %>.Migrations.<%= context_name %> do
     use Ecto.Migration
 
     def change do
