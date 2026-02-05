@@ -7,7 +7,7 @@ defmodule ExOauth2Provider.OpenId.IdTokenTest do
   alias ExOauth2Provider.Test.Fixtures
   alias ExOauth2Provider.Test.OpenId
 
-  describe "new/3" do
+  describe "new/3 when given an access token" do
     test "returns an ID token" do
       %{application: %{uid: client_id} = app} = token = Fixtures.insert(:access_token)
       iss = "id-token-iss"
@@ -214,7 +214,7 @@ defmodule ExOauth2Provider.OpenId.IdTokenTest do
       # Set the lifespan to a known value for the test.
       config =
         Map.merge(
-          OpenId.get_config(),
+          OpenId.get_app_config(),
           %{
             id_token_issuer: iss,
             id_token_lifespan: lifespan
@@ -240,6 +240,30 @@ defmodule ExOauth2Provider.OpenId.IdTokenTest do
       assert expires_at == auth_time + lifespan
 
       assert issued_at == auth_time
+    end
+  end
+
+  describe "new/1 when given a JWT struct" do
+    test "returns a fleshed out ID token" do
+      token = %JOSE.JWT{
+        fields: %{
+          "aud" => "aud",
+          "auth_time" => "at",
+          "exp" => "exp",
+          "iat" => "iat",
+          "iss" => "iss",
+          "sub" => "sub"
+        }
+      }
+
+      assert IdToken.new(token) == %{
+               aud: "aud",
+               auth_time: "at",
+               exp: "exp",
+               iat: "iat",
+               iss: "iss",
+               sub: "sub"
+             }
     end
   end
 end

@@ -55,6 +55,7 @@ defmodule ExOauth2Provider.Applications.Application do
     [
       {:is_trusted, :boolean, default: false, null: false},
       {:name, :string},
+      {:open_id_post_logout_redirect_uri, :string},
       {
         :pkce,
         Ecto.Enum,

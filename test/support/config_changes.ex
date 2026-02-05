@@ -39,7 +39,7 @@ defmodule ExOauth2Provider.Test.ConfigChanges do
   config but also retain what already is configured.
   """
   def add_open_id_changes(changes, app \\ :ex_oauth2_provider, key \\ ExOauth2Provider) do
-    original = OpenId.get_config()
+    original = OpenId.get_app_config()
     changed = Map.merge(original, changes)
 
     put_env_change([open_id: changed], app, key)

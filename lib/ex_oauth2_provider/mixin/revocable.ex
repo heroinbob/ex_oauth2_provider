@@ -1,9 +1,12 @@
 defmodule ExOauth2Provider.Mixin.Revocable do
   @moduledoc false
+  import Ecto.Query
 
   alias Ecto.{Changeset, Schema}
   alias ExOauth2Provider.Config
   alias ExOauth2Provider.Schema, as: SchemaHelpers
+
+  defdelegate repo(config), to: Config
 
   @doc """
   Revoke data.
@@ -22,7 +25,7 @@ defmodule ExOauth2Provider.Mixin.Revocable do
     |> revoke_query()
     |> case do
       nil -> {:ok, data}
-      query -> Config.repo(config).update(query)
+      query -> repo(config).update(query)
     end
   end
 
@@ -35,13 +38,39 @@ defmodule ExOauth2Provider.Mixin.Revocable do
     |> revoke_query()
     |> case do
       nil -> data
-      query -> Config.repo(config).update!(query)
+      query -> repo(config).update!(query)
     end
+  end
+
+  @doc """
+  Revoke all access tokens belonging to the resource owner for the specified app.
+  All previously revoked tokens are ignored. This effectively ends all active access
+  and requires re-authentication after calling.
+  """
+  @spec revoke_by_app_and_resource_owner(
+          app_id :: String.t() | non_neg_integer(),
+          resource_owner_id :: String.t() | non_neg_integer(),
+          opts :: map()
+        ) :: non_neg_integer()
+  def revoke_by_app_and_resource_owner(app_id, resource_owner_id, opts) do
+    %{repo: repo, schema: schema} = opts
+    revoked_at = SchemaHelpers.__timestamp_for__(schema, :revoked_at)
+
+    query =
+      schema
+      |> where([s], s.application_id == ^app_id)
+      |> where([s], s.resource_owner_id == ^resource_owner_id)
+      |> where([s], is_nil(s.revoked_at))
+
+    query
+    |> repo.update_all(set: [revoked_at: revoked_at])
+    |> elem(0)
   end
 
   defp revoke_query(%struct{revoked_at: nil} = data) do
     Changeset.change(data, revoked_at: SchemaHelpers.__timestamp_for__(struct, :revoked_at))
   end
+
   defp revoke_query(_data), do: nil
 
   @doc """
@@ -58,7 +87,7 @@ defmodule ExOauth2Provider.Mixin.Revocable do
   @spec filter_revoked(Schema.t()) :: Schema.t() | nil
   def filter_revoked(data) do
     case is_revoked?(data) do
-      true  -> nil
+      true -> nil
       false -> data
     end
   end

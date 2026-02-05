@@ -57,6 +57,17 @@ defmodule ExOauth2Provider.OpenId.IdToken do
   alias ExOauth2Provider.OpenId.OpenIdConfig
   alias ExOauth2Provider.Scopes
 
+  def new(%JOSE.JWT{fields: fields}) do
+    %{
+      aud: fields["aud"],
+      auth_time: fields["auth_time"],
+      exp: fields["exp"],
+      iat: fields["iat"],
+      iss: fields["iss"],
+      sub: fields["sub"]
+    }
+  end
+
   @spec new(access_token :: AccessToken.t(), request_context :: map(), opts :: keyword()) ::
           OpenId.id_token()
   def new(access_token, request_context, opts) do

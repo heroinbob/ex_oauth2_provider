@@ -4,6 +4,7 @@ defmodule ExOauth2Provider.AccessTokensTest do
   alias ExOauth2Provider.AccessTokens
   alias ExOauth2Provider.Test.{Fixtures, QueryHelpers}
   alias Dummy.OauthAccessTokens.OauthAccessToken
+  alias Dummy.Repo
 
   setup do
     %{owner: user} = app = Fixtures.insert(:application)
@@ -474,6 +475,57 @@ defmodule ExOauth2Provider.AccessTokensTest do
 
     test "when nil" do
       refute AccessTokens.is_accessible?(nil)
+    end
+  end
+
+  describe "revoke_by_app_and_resource_owner/3" do
+    test "revokes all non-revoked tokens for the given user associated to the given app" do
+      user = Fixtures.insert(:user)
+      app = Fixtures.insert(:application)
+
+      revokable_tokens =
+        Fixtures.insert_list(
+          3,
+          :access_token,
+          application: app,
+          resource_owner: user
+        )
+
+      revoked_at = ~U[2026-02-02 12:00:00Z]
+
+      revoked_token =
+        Fixtures.insert(
+          :access_token,
+          application: app,
+          resource_owner: user,
+          revoked_at: revoked_at
+        )
+
+      other_tokens = Fixtures.insert_list(3, :access_token)
+
+      assert AccessTokens.revoke_by_app_and_resource_owner(
+               app.id,
+               user.id,
+               otp_app: :ex_oauth2_provider
+             ) == 3
+
+      for token <- revokable_tokens do
+        assert not is_nil(Repo.reload(token).revoked_at),
+               "expected token #{token.id} to be revoked but it wasn't!"
+      end
+
+      assert %OauthAccessToken{revoked_at: ^revoked_at} = Repo.reload(revoked_token)
+
+      for token <- other_tokens do
+        assert Repo.reload(token).revoked_at == nil,
+               "expected other token #{token.id} to not be revoked but it was!"
+      end
+
+      assert AccessTokens.revoke_by_app_and_resource_owner(
+               app.id,
+               user.id,
+               otp_app: :ex_oauth2_provider
+             ) == 0
     end
   end
 

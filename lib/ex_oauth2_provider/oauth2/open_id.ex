@@ -2,10 +2,13 @@ defmodule ExOauth2Provider.OpenId do
   @moduledoc """
   Logic to allow working with Open ID.
   """
+  alias ExOauth2Provider.AccessTokens
   alias ExOauth2Provider.AccessTokens.AccessToken
-  alias ExOauth2Provider.OpenId.Errors.SigningError
+  alias ExOauth2Provider.OpenId.Claim
+  alias ExOauth2Provider.OpenId.EndSessionParams
   alias ExOauth2Provider.OpenId.OpenIdConfig
   alias ExOauth2Provider.OpenId.IdToken
+  alias ExOauth2Provider.OpenId.Signatures
   alias ExOauth2Provider.Scopes
 
   @type id_token :: %{
@@ -21,6 +24,52 @@ defmodule ExOauth2Provider.OpenId do
         }
 
   @open_id_scope "openid"
+
+  @doc """
+  End the current session for the given user based on the request params. If the given
+  ID Token is valid then we revoke all access tokens for the user that are associated
+  to the application that issued the token. Users must re-authenticate after this.
+
+  See [OpenID documentation](https://openid.net/specs/openid-connect-rpinitiated-1_0.html#toc)
+  for more information.
+  """
+  def end_session(request_params, opts) do
+    open_id_config = get_config(opts)
+
+    with {:ok, params} <-
+           EndSessionParams.parse_request_params(
+             request_params,
+             open_id_config,
+             opts
+           ) do
+      AccessTokens.revoke_by_app_and_resource_owner(
+        params.app.id,
+        params.user_id,
+        opts
+      )
+
+      %EndSessionParams{
+        post_logout_redirect_uri: redirect_uri,
+        state: state
+      } = params
+
+      if is_binary(redirect_uri) do
+        redirect_uri = add_state_to_redirect_uri(redirect_uri, state)
+        {:ok, {:redirect, redirect_uri}}
+      else
+        :ok
+      end
+    end
+  end
+
+  defp add_state_to_redirect_uri(redirect_uri, nil = _state) do
+    redirect_uri
+  end
+
+  defp add_state_to_redirect_uri(redirect_uri, state) do
+    prefix = if String.contains?(redirect_uri, "?"), do: "&", else: "?"
+    redirect_uri <> "#{prefix}state=#{state}"
+  end
 
   @spec fetch_nonce(request_params :: map()) :: {:ok, String.t()} | :not_found
   def fetch_nonce(request_params) do
@@ -39,6 +88,8 @@ defmodule ExOauth2Provider.OpenId do
     IdToken.new(access_token, context, config)
   end
 
+  defdelegate get_config(opts), to: OpenIdConfig, as: :get
+
   @spec in_scope?(scopes :: [String.t()] | String.t()) :: boolean()
   def in_scope?(scopes) when is_binary(scopes) do
     scopes
@@ -50,37 +101,28 @@ defmodule ExOauth2Provider.OpenId do
 
   def in_scope?(_), do: false
 
+  def list_claims(%OpenIdConfig{claims: claims}) do
+    Enum.flat_map(
+      claims,
+      fn %Claim{includes: includes, name: name} ->
+        [name | Enum.map(includes, & &1.name)]
+      end
+    )
+  end
+
+  def get_public_key(%OpenIdConfig{id_token_signing_key: key}) do
+    key
+    |> JOSE.JWK.to_public()
+    |> JOSE.JWK.to_map()
+    |> elem(1)
+  end
+
   @doc """
   Sign the given ID token. This relies on the configured signing_key,
   algorithm and key ID. See OpenIdConfig for more info.
   """
   @spec sign_id_token!(id_token :: id_token(), opts :: keyword()) :: String.t()
-  def sign_id_token!(%{iss: _} = id_token, opts \\ []) do
-    %{
-      id_token_signing_key: signing_key,
-      id_token_signing_key_algorithm: algorithm,
-      id_token_signing_key_id: key_id
-    } = OpenIdConfig.get(opts)
-
-    header = build_signing_header(algorithm, key_id)
-
-    {_, compact_jws} =
-      signing_key
-      |> JOSE.JWT.sign(header, id_token)
-      |> JOSE.JWS.compact()
-
-    compact_jws
-  rescue
-    error -> raise SigningError.new(error)
-  end
-
-  defp build_signing_header(algorithm, key_id) do
-    header = %{"alg" => algorithm, "typ" => "JWT"}
-
-    if is_binary(key_id) do
-      Map.put(header, "kid", key_id)
-    else
-      header
-    end
+  def sign_id_token!(%{iss: _} = id_token, opts) do
+    Signatures.create!(id_token, opts)
   end
 end

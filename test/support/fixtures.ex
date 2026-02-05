@@ -5,6 +5,7 @@ defmodule ExOauth2Provider.Test.Fixtures do
 
   alias ExOauth2Provider.{
     OpenId.Claim,
+    OpenId.OpenIdConfig,
     Test.OpenId,
     Test.PKCE,
     Utils
@@ -22,6 +23,10 @@ defmodule ExOauth2Provider.Test.Fixtures do
     plain: "plain",
     s256: "S256"
   }
+
+  def build_with_id(thing, opts \\ []) do
+    build(thing, [{:id, Ecto.UUID.generate()} | opts])
+  end
 
   def access_grant_factory do
     %OauthAccessGrant{
@@ -58,6 +63,26 @@ defmodule ExOauth2Provider.Test.Fixtures do
     }
   end
 
+  def config_factory(attrs \\ %{}) do
+    # Use the real config - and if attrs are passed in
+    # then they'll be merged in to the result!
+    app_config = OpenId.get_app_config()
+    private_key = OpenId.get_private_key(app_config)
+
+    # TODO flesh out claims if it's ever needed out of the box.
+    config_attrs =
+      app_config
+      |> Map.delete(:id_token_signing_key_pem)
+      |> Map.put(:id_token_signing_key, private_key)
+
+    # Do not use the fixture here. It relies on this function which creates
+    # an infinite loop.
+    OpenIdConfig
+    |> struct!(config_attrs)
+    |> merge_attributes(attrs)
+    |> evaluate_lazy_attributes()
+  end
+
   def device_grant_factory do
     %OauthDeviceGrant{
       application: build(:application),
@@ -68,17 +93,21 @@ defmodule ExOauth2Provider.Test.Fixtures do
     }
   end
 
-  def open_id_claim_factory do
-    %Claim{name: :test}
+  def id_token_factory do
+    unix = DateTime.to_unix(DateTime.utc_now())
+
+    %{
+      aud: Ecto.UUID.generate(),
+      auth_time: unix,
+      exp: unix + 600,
+      iat: unix,
+      iss: "https://oauth.test",
+      sub: Ecto.UUID.generate()
+    }
   end
 
-  def private_rs256_key_factory do
-    # Generated via the following command
-    # ssh-keygen -t rsa -b 4096 -m PEM -E SHA256 -f test/support/open_id/rsa256_key.pem
-    # There is no passphrase.
-    OpenId.get_config()
-    |> Map.fetch!(:id_token_signing_key_pem)
-    |> JOSE.JWK.from_pem()
+  def open_id_claim_factory do
+    %Claim{name: :test}
   end
 
   def user_factory do

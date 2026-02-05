@@ -3,13 +3,90 @@ defmodule ExOauth2Provider.OpenIdTest do
   use ExOauth2Provider.TestCase, async: false
   use ExOauth2Provider.Test.ConfigChanges
 
+  alias Dummy.Repo
   alias ExOauth2Provider.OpenId
   alias ExOauth2Provider.OpenId.Errors.SigningError
+  alias ExOauth2Provider.Test
   alias ExOauth2Provider.Test.Fixtures
 
-  defdelegate get_open_id_config(), to: ExOauth2Provider.Test.OpenId, as: :get_config
+  defdelegate get_open_id_config(), to: ExOauth2Provider.Test.OpenId, as: :get_app_config
   defdelegate signed_jwt?(value, algorithm, jwt), to: ExOauth2Provider.Test.OpenId
   defdelegate signed_jwt?(value, algorithm, jwt, key_id), to: ExOauth2Provider.Test.OpenId
+
+  @opts [otp_app: :ex_outh2_provider]
+
+  describe "end_session/2" do
+    test "revokes all access tokens and returns :ok when the request params are valid" do
+      %{
+        application: app,
+        resource_owner: user
+      } = access_token = Fixtures.insert(:access_token)
+
+      hint = Test.OpenId.generate_signed_id_token(app, user)
+      params = %{"id_token_hint" => hint, "user_id" => user.id}
+
+      assert OpenId.end_session(params, @opts) == :ok
+      assert access_token |> Repo.reload() |> Map.fetch!(:revoked_at) |> is_struct()
+    end
+
+    test "returns a redirect uri when present" do
+      app =
+        Fixtures.insert(
+          :application,
+          open_id_post_logout_redirect_uri: "https://test.com/callback"
+        )
+
+      %{resource_owner: user} =
+        access_token = Fixtures.insert(:access_token, application: app)
+
+      hint = Test.OpenId.generate_signed_id_token(app, user)
+
+      params = %{
+        "id_token_hint" => hint,
+        "post_logout_redirect_uri" => app.open_id_post_logout_redirect_uri,
+        "user_id" => user.id
+      }
+
+      assert OpenId.end_session(params, @opts) ==
+               {:ok, {:redirect, app.open_id_post_logout_redirect_uri}}
+
+      # Verify it include state too. It should support uris with params...
+      params = Map.put(params, "state", "test!")
+
+      assert OpenId.end_session(params, @opts) ==
+               {:ok, {:redirect, app.open_id_post_logout_redirect_uri <> "?state=test!"}}
+    end
+
+    test "state is added as an additional param to a redirect uri with params present" do
+      app =
+        Fixtures.insert(
+          :application,
+          open_id_post_logout_redirect_uri: "https://test.com/callback?foo=bar"
+        )
+
+      %{resource_owner: user} =
+        access_token = Fixtures.insert(:access_token, application: app)
+
+      hint = Test.OpenId.generate_signed_id_token(app, user)
+
+      params = %{
+        "id_token_hint" => hint,
+        "post_logout_redirect_uri" => app.open_id_post_logout_redirect_uri,
+        "state" => "abc",
+        "user_id" => user.id
+      }
+
+      assert OpenId.end_session(params, @opts) ==
+               {:ok, {:redirect, app.open_id_post_logout_redirect_uri <> "&state=abc"}}
+    end
+
+    test "returns an error when the request is invalid" do
+      user = Fixtures.build_with_id(:user)
+      params = %{"id_token_hint" => "foo", "user_id" => user.id}
+
+      assert {:error, %{id_token_hint: ["is invalid"]}} = OpenId.end_session(params, @opts)
+    end
+  end
 
   describe "fetch_nonce/1" do
     test "returns the nonce when it's present in the request" do
@@ -91,14 +168,14 @@ defmodule ExOauth2Provider.OpenIdTest do
     end
   end
 
-  describe "sign_id_token!/1" do
+  describe "sign_id_token!/2" do
     test "returns a signed, compact JWS for the given claims map" do
       %{
         id_token_signing_key_algorithm: signing_algorithm,
         id_token_signing_key_id: key_id
       } = get_open_id_config()
 
-      signed = OpenId.sign_id_token!(%{aud: "foo", iss: "bar"})
+      signed = OpenId.sign_id_token!(%{aud: "foo", iss: "bar"}, @opts)
 
       assert signed_jwt?(
                signed,
@@ -113,7 +190,7 @@ defmodule ExOauth2Provider.OpenIdTest do
       add_open_id_changes(%{id_token_signing_key_algorithm: "haha"})
 
       assert_raise(SigningError, fn ->
-        OpenId.sign_id_token!(%{iss: "space station"})
+        OpenId.sign_id_token!(%{iss: "space station"}, @opts)
       end)
     end
 
@@ -121,7 +198,7 @@ defmodule ExOauth2Provider.OpenIdTest do
       %{id_token_signing_key_algorithm: signing_algorithm} = get_open_id_config()
       add_open_id_changes(%{id_token_signing_key_id: nil})
 
-      signed = OpenId.sign_id_token!(%{iss: "station"})
+      signed = OpenId.sign_id_token!(%{iss: "station"}, @opts)
 
       assert signed_jwt?(
                signed,
@@ -129,9 +206,7 @@ defmodule ExOauth2Provider.OpenIdTest do
                %{"iss" => "station"}
              )
     end
-  end
 
-  describe "sign_id_token!/2" do
     test "allows overriding the app config" do
       %{id_token_signing_key_algorithm: signing_algorithm} =
         original_config = get_open_id_config()

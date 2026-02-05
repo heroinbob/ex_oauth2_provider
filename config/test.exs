@@ -5,6 +5,8 @@ import Config
 config :ex_oauth2_provider, namespace: Dummy
 
 config :ex_oauth2_provider, ExOauth2Provider,
+  application: Dummy.OauthApplications.OauthApplication,
+  access_token: Dummy.OauthAccessTokens.OauthAccessToken,
   default_scopes: ~w(public),
   device_flow_verification_uri: "https://test.site.net/device",
   grant_flows: ~w(
@@ -13,7 +15,6 @@ config :ex_oauth2_provider, ExOauth2Provider,
     device_code
   ),
   open_id: %{
-    id_token_audience: "test-aud",
     id_token_issuer: "test-iss",
     # Can't use fixtures here so have to load it manually. Generated via the following command
     # ssh-keygen -t rsa -b 4096 -m PEM -E SHA256 -f test/support/open_id/rsa256_key.pem

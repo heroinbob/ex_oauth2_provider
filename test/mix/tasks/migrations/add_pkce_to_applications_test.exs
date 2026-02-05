@@ -22,7 +22,7 @@ defmodule Mix.Tasks.ExOauth2Provider.AddPkceToApplicationsTest do
 
         assert get_migration_content!() ==
                  """
-                   defmodule #{inspect(MigrationRepo)}.Migrations.AddPkceToApplications do
+                 defmodule #{inspect(MigrationRepo)}.Migrations.AddPkceToApplications do
                    use Ecto.Migration
 
                    def change do

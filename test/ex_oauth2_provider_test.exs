@@ -4,6 +4,7 @@ defmodule ExOauth2ProviderTest do
 
   alias ExOauth2Provider.AccessTokens
   alias ExOauth2Provider.Test.Fixtures
+  alias ExOauth2Provider.Test.OpenId
   alias ExOauth2Provider.Utils
   alias Dummy.{OauthAccessTokens.OauthAccessToken, Repo}
 
@@ -137,6 +138,20 @@ defmodule ExOauth2ProviderTest do
 
       assert ExOauth2Provider.authenticate_token(access_token.token, otp_app: :ex_oauth2_provider) ==
                {:error, :token_inaccessible}
+    end
+  end
+
+  describe "end_session/2" do
+    test "returns the result of the call with the given params" do
+      %{
+        application: app,
+        resource_owner: user
+      } = Fixtures.insert(:access_token)
+
+      hint = OpenId.generate_signed_id_token(app, user)
+      params = %{"id_token_hint" => hint, "user_id" => user.id}
+
+      assert ExOauth2Provider.end_session(params, otp_app: :ex_oauth2_provider) == :ok
     end
   end
 end

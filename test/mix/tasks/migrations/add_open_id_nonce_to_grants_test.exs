@@ -22,7 +22,7 @@ defmodule Mix.Tasks.ExOauth2Provider.AddOpenIdNonceToGrantsTest do
 
         assert get_migration_content!() ==
                  """
-                   defmodule #{inspect(MigrationRepo)}.Migrations.AddOpenIdNonceToGrants do
+                 defmodule #{inspect(MigrationRepo)}.Migrations.AddOpenIdNonceToGrants do
                    use Ecto.Migration
 
                    def change do
