@@ -326,24 +326,4 @@ defmodule ExOauth2Provider.AccessTokens do
     |> Changeset.change(previous_refresh_token: "")
     |> Config.repo(config).update()
   end
-
-  @doc """
-  Revoke all active access tokens for the given user and app.
-  Returns the number of affected rows.
-  """
-  @spec revoke_by_app_and_resource_owner(
-          app_id :: String.t() | non_neg_integer(),
-          resource_owner_id :: String.t() | non_neg_integer(),
-          config :: keyword()
-        ) :: non_neg_integer()
-  def revoke_by_app_and_resource_owner(app_id, resource_owner_id, config) do
-    repo = Config.repo(config)
-    schema = Config.access_token(config)
-
-    Revocable.revoke_by_app_and_resource_owner(
-      app_id,
-      resource_owner_id,
-      %{repo: repo, schema: schema}
-    )
-  end
 end

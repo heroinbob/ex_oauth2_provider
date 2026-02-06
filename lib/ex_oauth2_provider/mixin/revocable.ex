@@ -42,31 +42,6 @@ defmodule ExOauth2Provider.Mixin.Revocable do
     end
   end
 
-  @doc """
-  Revoke all access tokens belonging to the resource owner for the specified app.
-  All previously revoked tokens are ignored. This effectively ends all active access
-  and requires re-authentication after calling.
-  """
-  @spec revoke_by_app_and_resource_owner(
-          app_id :: String.t() | non_neg_integer(),
-          resource_owner_id :: String.t() | non_neg_integer(),
-          opts :: map()
-        ) :: non_neg_integer()
-  def revoke_by_app_and_resource_owner(app_id, resource_owner_id, opts) do
-    %{repo: repo, schema: schema} = opts
-    revoked_at = SchemaHelpers.__timestamp_for__(schema, :revoked_at)
-
-    query =
-      schema
-      |> where([s], s.application_id == ^app_id)
-      |> where([s], s.resource_owner_id == ^resource_owner_id)
-      |> where([s], is_nil(s.revoked_at))
-
-    query
-    |> repo.update_all(set: [revoked_at: revoked_at])
-    |> elem(0)
-  end
-
   defp revoke_query(%struct{revoked_at: nil} = data) do
     Changeset.change(data, revoked_at: SchemaHelpers.__timestamp_for__(struct, :revoked_at))
   end

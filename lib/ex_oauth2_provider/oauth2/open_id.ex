@@ -2,7 +2,6 @@ defmodule ExOauth2Provider.OpenId do
   @moduledoc """
   Logic to allow working with Open ID.
   """
-  alias ExOauth2Provider.AccessTokens
   alias ExOauth2Provider.AccessTokens.AccessToken
   alias ExOauth2Provider.OpenId.Claim
   alias ExOauth2Provider.OpenId.EndSessionParams
@@ -33,6 +32,8 @@ defmodule ExOauth2Provider.OpenId do
   See [OpenID documentation](https://openid.net/specs/openid-connect-rpinitiated-1_0.html#toc)
   for more information.
   """
+  @spec end_session(request_params :: map(), opts :: keyword()) ::
+          :ok | {:ok, {:redirect, String.t()}} | {:error, any()}
   def end_session(request_params, opts) do
     open_id_config = get_config(opts)
 
@@ -42,12 +43,6 @@ defmodule ExOauth2Provider.OpenId do
              open_id_config,
              opts
            ) do
-      AccessTokens.revoke_by_app_and_resource_owner(
-        params.app.id,
-        params.user_id,
-        opts
-      )
-
       %EndSessionParams{
         post_logout_redirect_uri: redirect_uri,
         state: state

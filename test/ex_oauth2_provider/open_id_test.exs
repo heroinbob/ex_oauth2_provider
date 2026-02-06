@@ -3,7 +3,6 @@ defmodule ExOauth2Provider.OpenIdTest do
   use ExOauth2Provider.TestCase, async: false
   use ExOauth2Provider.Test.ConfigChanges
 
-  alias Dummy.Repo
   alias ExOauth2Provider.OpenId
   alias ExOauth2Provider.OpenId.Errors.SigningError
   alias ExOauth2Provider.Test
@@ -16,29 +15,24 @@ defmodule ExOauth2Provider.OpenIdTest do
   @opts [otp_app: :ex_outh2_provider]
 
   describe "end_session/2" do
-    test "revokes all access tokens and returns :ok when the request params are valid" do
-      %{
-        application: app,
-        resource_owner: user
-      } = access_token = Fixtures.insert(:access_token)
-
+    test "returns :ok when the request params are valid" do
+      app = Fixtures.insert(:application, scopes: "openid")
+      user = Fixtures.build_with_id(:user)
       hint = Test.OpenId.generate_signed_id_token(app, user)
       params = %{"id_token_hint" => hint, "user_id" => user.id}
 
       assert OpenId.end_session(params, @opts) == :ok
-      assert access_token |> Repo.reload() |> Map.fetch!(:revoked_at) |> is_struct()
     end
 
     test "returns a redirect uri when present" do
       app =
         Fixtures.insert(
           :application,
-          open_id_post_logout_redirect_uri: "https://test.com/callback"
+          open_id_post_logout_redirect_uri: "https://test.com/callback",
+          scopes: "openid"
         )
 
-      %{resource_owner: user} =
-        access_token = Fixtures.insert(:access_token, application: app)
-
+      user = Fixtures.build_with_id(:user)
       hint = Test.OpenId.generate_signed_id_token(app, user)
 
       params = %{
@@ -61,12 +55,11 @@ defmodule ExOauth2Provider.OpenIdTest do
       app =
         Fixtures.insert(
           :application,
-          open_id_post_logout_redirect_uri: "https://test.com/callback?foo=bar"
+          open_id_post_logout_redirect_uri: "https://test.com/callback?foo=bar",
+          scopes: "openid"
         )
 
-      %{resource_owner: user} =
-        access_token = Fixtures.insert(:access_token, application: app)
-
+      user = Fixtures.build_with_id(:user)
       hint = Test.OpenId.generate_signed_id_token(app, user)
 
       params = %{

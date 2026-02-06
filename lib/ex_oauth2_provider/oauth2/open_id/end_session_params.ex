@@ -3,7 +3,9 @@ defmodule ExOauth2Provider.OpenId.EndSessionParams do
 
   alias Ecto.Changeset
   alias ExOauth2Provider.Applications
+  alias ExOauth2Provider.OpenId
   alias ExOauth2Provider.OpenId.OpenIdConfig
+  alias ExOauth2Provider.OpenId.Signatures
   alias ExOauth2Provider.OpenId.Signatures
 
   @castable [:id_token_hint, :post_logout_redirect_uri, :state, :user_id]
@@ -65,11 +67,16 @@ defmodule ExOauth2Provider.OpenId.EndSessionParams do
 
     # Double ampersand short circuits so you either get false, nil or a struct.
     case is_binary(aud) && Applications.get_application(aud, opts) do
-      %{uid: _} = app ->
-        Changeset.put_change(changeset, :app, app)
+      %{uid: _} = app -> verify_app_uses_openid(changeset, app)
+      _ -> Changeset.add_error(changeset, :aud, "is invalid")
+    end
+  end
 
-      _ ->
-        Changeset.add_error(changeset, :aud, "is invalid")
+  defp verify_app_uses_openid(changeset, app) do
+    if OpenId.in_scope?(app.scopes) do
+      Changeset.put_change(changeset, :app, app)
+    else
+      Changeset.add_error(changeset, :aud, "is invalid")
     end
   end
 

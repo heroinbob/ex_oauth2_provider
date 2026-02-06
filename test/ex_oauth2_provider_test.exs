@@ -143,11 +143,8 @@ defmodule ExOauth2ProviderTest do
 
   describe "end_session/2" do
     test "returns the result of the call with the given params" do
-      %{
-        application: app,
-        resource_owner: user
-      } = Fixtures.insert(:access_token)
-
+      app = Fixtures.insert(:application, scopes: "openid")
+      %{resource_owner: user} = Fixtures.insert(:access_token, application: app)
       hint = OpenId.generate_signed_id_token(app, user)
       params = %{"id_token_hint" => hint, "user_id" => user.id}
 
