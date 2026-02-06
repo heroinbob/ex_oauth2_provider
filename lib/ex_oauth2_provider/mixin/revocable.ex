@@ -1,6 +1,5 @@
 defmodule ExOauth2Provider.Mixin.Revocable do
   @moduledoc false
-  import Ecto.Query
 
   alias Ecto.{Changeset, Schema}
   alias ExOauth2Provider.Config
