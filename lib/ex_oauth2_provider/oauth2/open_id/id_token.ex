@@ -129,7 +129,7 @@ defmodule ExOauth2Provider.OpenId.IdToken do
        ) do
     case find_claim(claims, name) do
       %Claim{includes: includes, name: name} = claim ->
-        value = Claim.get_value_for!(claim, user)
+        value = Claim.get_value_for(claim, user)
 
         payload
         |> Map.put(name, value)
@@ -146,7 +146,7 @@ defmodule ExOauth2Provider.OpenId.IdToken do
       payload,
       fn
         %Claim{name: name} = claim, acc ->
-          value = Claim.get_value_for!(claim, user)
+          value = Claim.get_value_for(claim, user)
 
           Map.put(acc, name, value)
       end

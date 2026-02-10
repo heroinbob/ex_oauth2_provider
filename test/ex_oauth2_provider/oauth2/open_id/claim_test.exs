@@ -4,12 +4,12 @@ defmodule ExOauth2Provider.OpenId.ClaimTest do
   alias ExOauth2Provider.OpenId.Claim
   alias ExOauth2Provider.Test.Fixtures
 
-  describe "get_value_for!/2" do
+  describe "get_value_for/2" do
     test "returns the value for the claim from the source" do
       source = %{united_states_of: :whatever}
       claim = Fixtures.build(:open_id_claim, name: :united_states_of)
 
-      assert Claim.get_value_for!(claim, source) == :whatever
+      assert Claim.get_value_for(claim, source) == :whatever
     end
 
     test "relies on the alias when defined" do
@@ -22,21 +22,46 @@ defmodule ExOauth2Provider.OpenId.ClaimTest do
           name: :fail
         )
 
-      assert Claim.get_value_for!(claim, source) == :dum
+      assert Claim.get_value_for(claim, source) == :dum
     end
 
     test "returns nil when the source does not have the attr" do
       source = %{united_states_of: :whatever}
       claim = Fixtures.build(:open_id_claim, name: :california, value_when_missing: :state)
 
-      assert Claim.get_value_for!(claim, source) == :state
+      assert Claim.get_value_for(claim, source) == :state
     end
 
     test "returns the provided default when the source doesn't have the attr" do
       source = %{united_states_of: :whatever}
       claim = Fixtures.build(:open_id_claim, name: :california)
 
-      assert Claim.get_value_for!(claim, source) == nil
+      assert Claim.get_value_for(claim, source) == nil
+    end
+
+    test "returns the transformer result when :transformer is given as a function" do
+      source = %{united_states_of: :whatever}
+
+      # If you pass a function to ex machina then it'll execute it which isn't what we want.
+      claim =
+        :open_id_claim
+        |> Fixtures.build(name: :united_states_of)
+        |> Map.put(:transformer, &Atom.to_string(&1.united_states_of))
+
+      assert Claim.get_value_for(claim, source) == "whatever"
+    end
+
+    test "ignores :transformer when it's not a function" do
+      source = %{united_states_of: :whatever}
+
+      claim =
+        Fixtures.build(
+          :open_id_claim,
+          name: :united_states_of,
+          transformer: :robots_in_disguise
+        )
+
+      assert Claim.get_value_for(claim, source) == :whatever
     end
   end
 
