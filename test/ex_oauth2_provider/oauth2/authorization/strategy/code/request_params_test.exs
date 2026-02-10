@@ -218,25 +218,30 @@ defmodule ExOauth2Provider.Authorization.Code.RequestParamsTest do
 
     test "supports non-native redirect URI" do
       owner = Fixtures.insert(:user)
+      uris = ~w[https://my-site.com/authorize https://my-other-site.net/authorize]
 
+      # Let's try an app with multiple redirect uris allowed.
       application =
         Fixtures.insert(
           :application,
-          redirect_uri: "https://my-site.com/authorize",
+          redirect_uri: Enum.join(uris, " "),
           owner: owner
         )
 
-      context =
-        Fixtures.authorization_request_context(
-          client: application,
-          request: %{
-            "redirect_uri" => application.redirect_uri,
-            "scope" => application.scopes
-          },
-          resource_owner: owner
-        )
+      for uri <- uris do
+        context =
+          Fixtures.authorization_request_context(
+            client: application,
+            request: %{
+              "redirect_uri" => uri,
+              "scope" => application.scopes
+            },
+            resource_owner: owner
+          )
 
-      assert RequestParams.validate(context, otp_app: :ex_oauth2_provider) == :ok
+        assert RequestParams.validate(context, otp_app: :ex_oauth2_provider) == :ok,
+               "expected request with uri `#{uri}` to be valid but it wasn't!"
+      end
     end
 
     test "ignores PKCE fields when not enabled" do
