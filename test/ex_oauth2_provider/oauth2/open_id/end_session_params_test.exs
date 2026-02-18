@@ -75,6 +75,42 @@ defmodule ExOauth2Provider.OpenId.EndSessionParamsTest do
              } = EndSessionParams.parse_request_params(params, config, @opts)
     end
 
+    test "supports apps with multiple logout uris" do
+      redirect_uri = "https://test.site/callback/abc123"
+
+      app =
+        Fixtures.insert(
+          :application,
+          open_id_post_logout_redirect_uri: "https://not-the-url.com/callback #{redirect_uri}",
+          scopes: "openid"
+        )
+
+      %{id: user_id} = Fixtures.build_with_id(:user)
+      config = Fixtures.build(:config)
+
+      hint =
+        :id_token
+        |> Fixtures.build(
+          aud: app.uid,
+          iss: config.id_token_issuer,
+          sub: user_id
+        )
+        |> OpenId.sign_id_token(config)
+
+      params = %{
+        "id_token_hint" => hint,
+        "post_logout_redirect_uri" => redirect_uri,
+        "user_id" => user_id
+      }
+
+      assert {
+               :ok,
+               %EndSessionParams{
+                 post_logout_redirect_uri: ^redirect_uri
+               }
+             } = EndSessionParams.parse_request_params(params, config, @opts)
+    end
+
     test "returns the state when valid" do
       state = "7def8742-ea79-46b8-aa52-eb09e558885b"
       app = Fixtures.insert(:application, scopes: "openid")

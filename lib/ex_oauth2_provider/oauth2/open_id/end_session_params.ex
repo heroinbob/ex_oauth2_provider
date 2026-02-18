@@ -112,10 +112,19 @@ defmodule ExOauth2Provider.OpenId.EndSessionParams do
         %{open_id_post_logout_redirect_uri: nil}
       )
 
-    if app_uri == request_uri do
-      changeset
-    else
-      Changeset.add_error(changeset, :post_logout_redirect_uri, "is invalid")
+    possible_uris = String.split(app_uri || "")
+
+    cond do
+      request_uri == nil ->
+        # There is no redirect requested for this.
+        changeset
+
+      Enum.any?(possible_uris, &(&1 == request_uri)) ->
+        # When redirect is requested it must be one of the possible values.
+        changeset
+
+      true ->
+        Changeset.add_error(changeset, :post_logout_redirect_uri, "is invalid")
     end
   end
 
