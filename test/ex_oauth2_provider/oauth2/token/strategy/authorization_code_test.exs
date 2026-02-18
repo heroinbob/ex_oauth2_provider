@@ -311,11 +311,7 @@ defmodule ExOauth2Provider.Token.Strategy.AuthorizationCodeTest do
       }
     end
 
-    test "creates and returns the access token and ID token", %{
-      resource_owner: resource_owner,
-      application: application,
-      access_grant: access_grant
-    } do
+    test "creates and returns the access token and ID token" do
       assert {
                :ok,
                %{access_token: _, id_token: _}
@@ -324,8 +320,7 @@ defmodule ExOauth2Provider.Token.Strategy.AuthorizationCodeTest do
 
     test "returns the existing tokens when valid", %{
       resource_owner: resource_owner,
-      application: application,
-      access_grant: access_grant
+      application: application
     } do
       %{token: existing_token} =
         Fixtures.insert(

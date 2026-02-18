@@ -436,8 +436,19 @@ defmodule ExOauth2Provider.Authorization.CodeTest do
 
       access_grant = QueryHelpers.get_latest_inserted(OauthAccessGrant)
 
-      assert redirect_uri ==
-               "https://example.com/path?code=#{access_grant.token}&param=1&state=40612"
+      # Param order is not guaranteed. So check everything safely.
+      assert %URI{
+               host: "example.com",
+               path: "/path",
+               query: query,
+               scheme: "https"
+             } = URI.parse(redirect_uri)
+
+      assert URI.decode_query(query) == %{
+               "code" => access_grant.token,
+               "param" => "1",
+               "state" => "40612"
+             }
     end
 
     test "validates and stores PKCE data when enabled", %{resource_owner: resource_owner} do
@@ -548,9 +559,22 @@ defmodule ExOauth2Provider.Authorization.CodeTest do
           "state" => 40_612
         })
 
-      assert Authorization.deny(resource_owner, request, @config) ==
-               {:redirect,
-                "https://example.com/path?error=access_denied&error_description=The+resource+owner+or+authorization+server+denied+the+request.&param=1&state=40612"}
+      {:redirect, uri} = assert Authorization.deny(resource_owner, request, @config)
+      # Param order is not guaranteed. So check everything safely.
+      assert %URI{
+               host: "example.com",
+               path: "/path",
+               query: query,
+               scheme: "https"
+             } = URI.parse(uri)
+
+      assert URI.decode_query(query) == %{
+               "error" => "access_denied",
+               "error_description" =>
+                 "The resource owner or authorization server denied the request.",
+               "param" => "1",
+               "state" => "40612"
+             }
     end
   end
 end

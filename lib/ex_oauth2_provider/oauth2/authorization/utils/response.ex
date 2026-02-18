@@ -106,8 +106,8 @@ defmodule ExOauth2Provider.Authorization.Utils.Response do
         payload
 
       state ->
-        %{"state" => state}
-        |> Map.merge(payload)
+        payload
+        |> Map.put(:state, state)
         |> Utils.remove_empty_values()
     end
   end
