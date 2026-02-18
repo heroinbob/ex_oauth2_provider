@@ -19,6 +19,8 @@ defmodule ExOauth2Provider.Token.AuthorizationCode do
           request: map()
         }
 
+  defdelegate repo(config), to: Config
+
   @doc """
   Will grant access token by client credentials.
 
@@ -65,7 +67,7 @@ defmodule ExOauth2Provider.Token.AuthorizationCode do
     token_params = %{use_refresh_token: Config.use_refresh_token?(config)}
 
     result =
-      Config.repo(config).transaction(fn ->
+      repo(config).transaction(fn ->
         access_grant
         |> revoke_grant(config)
         |> maybe_create_access_token(token_params, config)
@@ -90,11 +92,13 @@ defmodule ExOauth2Provider.Token.AuthorizationCode do
        ) do
     token_params = Map.merge(token_params, %{scopes: scopes, application: application})
 
+    # It's important to know that the resource_owner must be preloaded as a result of this.
+    # It is used in the response when building an ID token.
     resource_owner
     |> AccessTokens.get_token_for(application, scopes, config)
     |> case do
       nil -> AccessTokens.create_token(resource_owner, token_params, config)
-      access_token -> {:ok, access_token}
+      access_token -> {:ok, repo(config).preload(access_token, :resource_owner)}
     end
   end
 
@@ -104,8 +108,8 @@ defmodule ExOauth2Provider.Token.AuthorizationCode do
        ) do
     client
     |> AccessGrants.get_active_grant_for(code, config)
-    |> Config.repo(config).preload(:resource_owner)
-    |> Config.repo(config).preload(:application)
+    |> repo(config).preload(:resource_owner)
+    |> repo(config).preload(:application)
     |> case do
       nil -> Error.add_error({:ok, params}, Error.invalid_grant())
       access_grant -> {:ok, Map.put(params, :access_grant, access_grant)}

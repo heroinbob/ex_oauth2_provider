@@ -39,34 +39,37 @@ defmodule ExOauth2Provider.Token.Strategy.AuthorizationCodeTest do
       "The provided authorization grant is invalid, expired, revoked, does not match the redirection URI used in the authorization request, or was issued to another client."
   }
 
-  setup do
-    resource_owner = Fixtures.insert(:user)
-
-    application =
-      Fixtures.insert(
-        :application,
-        uid: @client_id,
-        secret: @client_secret
-      )
-
-    {:ok, %{resource_owner: resource_owner, application: application}}
-  end
-
-  setup %{resource_owner: resource_owner, application: application} do
-    access_grant =
-      Fixtures.insert(
-        :access_grant,
-        application: application,
-        redirect_uri: @redirect_uri,
-        resource_owner: resource_owner,
-        token: @code
-      )
-
-    {:ok, %{resource_owner: resource_owner, application: application, access_grant: access_grant}}
-  end
-
   describe "#grant/2" do
-    test "#returns access token", %{
+    setup do
+      resource_owner = Fixtures.insert(:user)
+
+      application =
+        Fixtures.insert(
+          :application,
+          uid: @client_id,
+          secret: @client_secret
+        )
+
+      access_grant =
+        Fixtures.insert(
+          :access_grant,
+          application: application,
+          redirect_uri: @redirect_uri,
+          resource_owner: resource_owner,
+          token: @code
+        )
+
+      {
+        :ok,
+        %{
+          resource_owner: resource_owner,
+          application: application,
+          access_grant: access_grant
+        }
+      }
+    end
+
+    test "creates and returns the access token", %{
       resource_owner: resource_owner,
       application: application,
       access_grant: access_grant
@@ -135,7 +138,7 @@ defmodule ExOauth2Provider.Token.Strategy.AuthorizationCodeTest do
                {:error, @invalid_grant, :unprocessable_entity}
     end
 
-    test "doesn't duplicate access token", %{
+    test "returns the existing access token when it is still valid", %{
       resource_owner: resource_owner,
       application: application
     } do
@@ -218,6 +221,35 @@ defmodule ExOauth2Provider.Token.Strategy.AuthorizationCodeTest do
   end
 
   describe "grant/3 when PKCE is enabled" do
+    setup do
+      resource_owner = Fixtures.insert(:user)
+
+      application =
+        Fixtures.insert(
+          :application,
+          uid: @client_id,
+          secret: @client_secret
+        )
+
+      access_grant =
+        Fixtures.insert(
+          :access_grant,
+          application: application,
+          redirect_uri: @redirect_uri,
+          resource_owner: resource_owner,
+          token: @code
+        )
+
+      {
+        :ok,
+        %{
+          resource_owner: resource_owner,
+          application: application,
+          access_grant: access_grant
+        }
+      }
+    end
+
     test "validates the PKCE info and returns the grant", %{access_grant: access_grant} do
       verifier = PKCE.generate_code_verifier()
       challenge = PKCE.generate_code_challenge(verifier, :s256)
@@ -245,6 +277,68 @@ defmodule ExOauth2Provider.Token.Strategy.AuthorizationCodeTest do
 
       assert Token.grant(request, otp_app: :ex_oauth2_provider, pkce: :all_methods) ==
                {:error, @invalid_grant, :unprocessable_entity}
+    end
+  end
+
+  describe "grant/3 when request is for an OpenID token" do
+    setup do
+      application =
+        Fixtures.insert(
+          :application,
+          secret: @client_secret,
+          scopes: "openid read write",
+          uid: @client_id
+        )
+
+      %{resource_owner: owner} =
+        access_grant =
+        Fixtures.insert(
+          :access_grant,
+          application: application,
+          open_id_nonce: "abc123",
+          redirect_uri: @redirect_uri,
+          scopes: application.scopes,
+          token: @code
+        )
+
+      {
+        :ok,
+        %{
+          resource_owner: owner,
+          application: application,
+          access_grant: access_grant
+        }
+      }
+    end
+
+    test "creates and returns the access token and ID token", %{
+      resource_owner: resource_owner,
+      application: application,
+      access_grant: access_grant
+    } do
+      assert {
+               :ok,
+               %{access_token: _, id_token: _}
+             } = Token.grant(@valid_request, otp_app: :ex_oauth2_provider)
+    end
+
+    test "returns the existing tokens when valid", %{
+      resource_owner: resource_owner,
+      application: application,
+      access_grant: access_grant
+    } do
+      %{token: existing_token} =
+        Fixtures.insert(
+          :access_token,
+          application: application,
+          resource_owner: resource_owner,
+          scopes: application.scopes
+        )
+
+      assert {
+               :ok,
+               %{access_token: %{access_token: ^existing_token}, id_token: _}
+             } = Token.grant(@valid_request, otp_app: :ex_oauth2_provider)
     end
   end
 
