@@ -59,7 +59,7 @@ defmodule ExOauth2Provider.Plug.ClientSecretBasic do
 
   defp deny_access(conn, %{on_error: :noop}), do: conn
 
-  defp deny_access(conn, opts) do
+  defp deny_access(conn, _opts) do
     conn
     |> halt()
     |> ErrorHandler.unauthenticated(nil)
