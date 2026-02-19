@@ -66,6 +66,9 @@ defmodule ExOauth2Provider.OpenId do
     redirect_uri <> "#{prefix}state=#{state}"
   end
 
+  @doc """
+  Returns the nonce if present in the request params.
+  """
   @spec fetch_nonce(request_params :: map()) :: {:ok, String.t()} | :not_found
   def fetch_nonce(request_params) do
     case request_params do
@@ -74,6 +77,9 @@ defmodule ExOauth2Provider.OpenId do
     end
   end
 
+  @doc """
+  Returns an ID token based on the given access token and context.
+  """
   @spec generate_id_token(
           access_token :: AccessToken.t(),
           context :: map(),
@@ -85,6 +91,9 @@ defmodule ExOauth2Provider.OpenId do
 
   defdelegate get_config(opts), to: OpenIdConfig, as: :get
 
+  @doc """
+  Returns true if `"openid"` is in the given scopes.
+  """
   @spec in_scope?(scopes :: [String.t()] | String.t()) :: boolean()
   def in_scope?(scopes) when is_binary(scopes) do
     scopes
@@ -96,6 +105,10 @@ defmodule ExOauth2Provider.OpenId do
 
   def in_scope?(_), do: false
 
+  @doc """
+  Returns all of the claims supported by the current config.
+  """
+  @spec list_claims(config :: OpenIdConfig.t()) :: [Claim.t()]
   def list_claims(%OpenIdConfig{claims: claims}) do
     Enum.flat_map(
       claims,
@@ -105,6 +118,10 @@ defmodule ExOauth2Provider.OpenId do
     )
   end
 
+  @doc """
+  Returns the public key used for signing ID tokens.
+  """
+  @spec get_public_key(config :: OpenIdConfig.t()) :: map()
   def get_public_key(%OpenIdConfig{id_token_signing_key: key}) do
     key
     |> JOSE.JWK.to_public()

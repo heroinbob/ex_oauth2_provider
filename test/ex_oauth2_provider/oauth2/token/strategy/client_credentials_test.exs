@@ -58,4 +58,11 @@ defmodule ExOauth2Provider.Token.Strategy.ClientCredentialsTest do
     # MUST NOT have refresh token
     assert access_token.refresh_token == nil
   end
+
+  test "returns error when token creation fails" do
+    # Use a non existent scope to trigger a failure in the changeset.
+    request = Map.put(@valid_request, "scope", "fail!")
+
+    assert {:error, _, :bad_request} = Token.grant(request, otp_app: :ex_oauth2_provider)
+  end
 end

@@ -61,8 +61,8 @@ defmodule ExOauth2Provider.Plug.ClientSecretBasicTest do
     end
 
     test "returns unauthenticated when the decoded value isn't formatted correctly" do
-      for value <- ~w[abcxyz ab:cd:ef abc:] do
-        token = Base.encode64("abcxyz")
+      for value <- ~w[abcxyz abc-xyz] do
+        token = Base.encode64(value)
 
         conn =
           :post
@@ -98,8 +98,8 @@ defmodule ExOauth2Provider.Plug.ClientSecretBasicTest do
     end
 
     test "noops when the decoded value isn't formatted correctly" do
-      for value <- ~w[abcxyz ab:cd:ef abc:] do
-        token = Base.encode64("abcxyz")
+      for value <- ~w[abcxyz abc-xyz] do
+        token = Base.encode64(value)
 
         conn =
           :post

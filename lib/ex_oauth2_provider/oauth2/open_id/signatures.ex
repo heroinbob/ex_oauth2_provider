@@ -70,7 +70,13 @@ defmodule ExOauth2Provider.OpenId.Signatures do
       {true, _, _} ->
         {:error, :invalid_jws}
 
-      {:error, _} ->
+      _error ->
+        # It should be noted that if you pass an unsigned string to
+        # verify_strict then it returns {:error, {:badarg, [<VALUE>]}}
+        # where value is what you passed in. That's not described in
+        # the typespec or documentation so this is designed to be a
+        # catchall for _anything_ else. The value comes from the erlang
+        # library so the elixir typespec is wrong.
         {:error, :unsupported_value}
     end
   end

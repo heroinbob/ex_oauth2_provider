@@ -11,10 +11,11 @@ defmodule ExOauth2Provider.Authorization.Utils do
 
   # TODO: This should be a struct
   @type context :: %{
-          client: map(),
-          is_open_id: boolean(),
-          request: map(),
-          resource_owner: map()
+          required(:client) => map(),
+          required(:is_open_id) => boolean(),
+          required(:request) => map(),
+          required(:resource_owner) => map(),
+          optional(:access_token) => map()
         }
 
   @doc false
