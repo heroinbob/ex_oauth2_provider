@@ -1,5 +1,6 @@
 Logger.configure(level: :warning)
 
+{:ok, _} = Application.ensure_all_started(:ex_machina)
 ExUnit.start()
 
 # Ensure that symlink to custom ecto priv directory exists

@@ -81,6 +81,7 @@ defmodule Mix.ExOauth2Provider.Migration do
   <%= if schema.binary_id do %>      add :id, :binary_id, primary_key: true
   <% end %><%= for {k, v} <- schema.attrs do %>      add <%= inspect k %>, <%= inspect v %><%= schema.defaults[k] %>
   <% end %><%= for {_, i, _, s} <- schema.assocs do %>      add <%= if(String.ends_with?(inspect(i), "_id"), do: inspect(i), else: inspect(i) <> "_id") %>, references(<%= inspect(s) %>, on_delete: :nothing<%= if schema.binary_id do %>, type: :binary_id<% end %>)
+  <% end %><%= for %{name: name} <- schema.embeds do %>      add <%= inspect name %>, :map
   <% end %>
         timestamps()
       end
@@ -136,12 +137,13 @@ defmodule Mix.ExOauth2Provider.Migration do
     indexes = migration_indexes(module.indexes(), table)
 
     %{
-      table: table,
-      binary_id: binary_id,
-      attrs: attrs,
-      defaults: defaults,
       assocs: assocs,
-      indexes: indexes
+      attrs: attrs,
+      binary_id: binary_id,
+      defaults: defaults,
+      embeds: module.embeds(),
+      indexes: indexes,
+      table: table
     }
   end
 
@@ -174,6 +176,11 @@ defmodule Mix.ExOauth2Provider.Migration do
 
   defp to_migration_attr({name, type, []}) do
     to_migration_attr({name, type})
+  end
+
+  # Leave it alone.
+  defp to_migration_attr({_name, :embeds_one, _context} = attr) do
+    attr
   end
 
   # Use a string DB column for Ecto.Enum fields.

@@ -4,7 +4,12 @@ defmodule ExOauth2Provider.Authorization.CodeTest do
   alias Ecto.Changeset
   alias ExOauth2Provider.{Authorization, Config, Scopes}
   alias ExOauth2Provider.Test.{Fixtures, PKCE, QueryHelpers}
-  alias Dummy.{OauthAccessGrants.OauthAccessGrant, Repo}
+
+  alias Dummy.{
+    OauthApplications.OauthApplication,
+    OauthAccessGrants.OauthAccessGrant,
+    Repo
+  }
 
   @config [otp_app: :ex_oauth2_provider]
   @client_id "Jf5rM8hQBc"
@@ -37,8 +42,14 @@ defmodule ExOauth2Provider.Authorization.CodeTest do
   }
 
   setup do
-    resource_owner = Fixtures.resource_owner()
-    application = Fixtures.application(uid: @client_id, scopes: "app:read app:write")
+    %{owner: resource_owner} =
+      application =
+      Fixtures.insert(
+        :application,
+        uid: @client_id,
+        scopes: "app:read app:write"
+      )
+
     {:ok, %{resource_owner: resource_owner, application: application}}
   end
 
@@ -64,20 +75,26 @@ defmodule ExOauth2Provider.Authorization.CodeTest do
 
     test "works with a valid request", %{
       resource_owner: resource_owner,
-      application: application
+      application: %{id: app_id}
     } do
       expected_scopes = Scopes.to_list(@valid_request["scope"])
 
-      assert Authorization.preauthorize(resource_owner, @valid_request, @config) ==
-               {:ok, application, expected_scopes}
+      assert {
+               :ok,
+               %{
+                 app: %OauthApplication{id: ^app_id},
+                 scopes: ^expected_scopes
+               }
+             } = Authorization.preauthorize(resource_owner, @valid_request, @config)
     end
 
     test "when previous access token with different application scopes", %{
       resource_owner: resource_owner,
-      application: application
+      application: %{id: app_id} = application
     } do
       access_token =
-        Fixtures.access_token(
+        Fixtures.insert(
+          :access_token,
           resource_owner: resource_owner,
           application: application,
           scopes: "app:read"
@@ -85,25 +102,40 @@ defmodule ExOauth2Provider.Authorization.CodeTest do
 
       expected_scopes = Scopes.to_list(@valid_request["scope"])
 
-      assert Authorization.preauthorize(resource_owner, @valid_request, @config) ==
-               {:ok, application, expected_scopes}
+      assert {
+               :ok,
+               %{
+                 app: %OauthApplication{id: ^app_id},
+                 scopes: ^expected_scopes
+               }
+             } = Authorization.preauthorize(resource_owner, @valid_request, @config)
 
       QueryHelpers.change!(access_token, scopes: "app:read app:write")
       request = Map.merge(@valid_request, %{"scope" => "app:read"})
       expected_scopes = Scopes.to_list(request["scope"])
 
-      assert Authorization.preauthorize(resource_owner, request, @config) ==
-               {:ok, application, expected_scopes}
+      assert {
+               :ok,
+               %{
+                 app: %OauthApplication{id: ^app_id},
+                 scopes: ^expected_scopes
+               }
+             } = Authorization.preauthorize(resource_owner, request, @config)
     end
 
     test "with limited scope", %{
       resource_owner: resource_owner,
-      application: application
+      application: %{id: app_id}
     } do
       request = Map.merge(@valid_request, %{"scope" => "app:read"})
 
-      assert Authorization.preauthorize(resource_owner, request, @config) ==
-               {:ok, application, ["app:read"]}
+      assert {
+               :ok,
+               %{
+                 app: %OauthApplication{id: ^app_id},
+                 scopes: ["app:read"]
+               }
+             } = Authorization.preauthorize(resource_owner, request, @config)
     end
 
     test "error when invalid scope", %{resource_owner: resource_owner} do
@@ -114,6 +146,28 @@ defmodule ExOauth2Provider.Authorization.CodeTest do
     end
   end
 
+  describe "preauthorize/3 when openid is in scope and nonce is present" do
+    test "it returns the nonce" do
+      %{id: app_id} = app = Fixtures.insert(:application, scopes: "openid test")
+      nonce = "ima-cute-lil-nonce"
+
+      request =
+        Map.merge(
+          @valid_request,
+          %{"client_id" => app.uid, "nonce" => nonce, "scope" => app.scopes}
+        )
+
+      assert {
+               :ok,
+               %{
+                 app: %OauthApplication{id: ^app_id},
+                 nonce: ^nonce,
+                 scopes: ~w[openid test]
+               }
+             } = Authorization.preauthorize(app.owner, request, @config)
+    end
+  end
+
   describe "#preauthorize/3 when application has no scope" do
     setup %{resource_owner: resource_owner, application: application} do
       application = QueryHelpers.change!(application, scopes: "")
@@ -121,11 +175,14 @@ defmodule ExOauth2Provider.Authorization.CodeTest do
       %{resource_owner: resource_owner, application: application}
     end
 
-    test "with limited server scope", %{resource_owner: resource_owner, application: application} do
+    test "with limited server scope", %{
+      resource_owner: resource_owner,
+      application: %{id: app_id}
+    } do
       request = Map.merge(@valid_request, %{"scope" => "read"})
 
-      assert Authorization.preauthorize(resource_owner, request, @config) ==
-               {:ok, application, ["read"]}
+      assert {:ok, %{app: %OauthApplication{id: ^app_id}, scopes: ["read"]}} =
+               Authorization.preauthorize(resource_owner, request, @config)
     end
 
     test "error when invalid server scope", %{resource_owner: resource_owner} do
@@ -141,7 +198,8 @@ defmodule ExOauth2Provider.Authorization.CodeTest do
       resource_owner: resource_owner,
       application: application
     } do
-      Fixtures.access_token(
+      Fixtures.insert(
+        :access_token,
         resource_owner: resource_owner,
         application: application,
         scopes: @valid_request["scope"]
@@ -258,7 +316,7 @@ defmodule ExOauth2Provider.Authorization.CodeTest do
   describe "#preauthorize/3 when PKCE is enabled" do
     test "validates the code challenge and returns the result", %{
       resource_owner: resource_owner,
-      application: application
+      application: %{id: app_id} = application
     } do
       expected_scopes = Scopes.to_list(@valid_request["scope"])
 
@@ -271,24 +329,25 @@ defmodule ExOauth2Provider.Authorization.CodeTest do
           }
         )
 
-      assert Authorization.preauthorize(
-               resource_owner,
-               request,
-               [{:use_pkce, true} | @config]
-             ) == {:ok, application, expected_scopes}
+      assert {:ok, %{app: %OauthApplication{id: ^app_id}, scopes: ^expected_scopes}} =
+               Authorization.preauthorize(
+                 resource_owner,
+                 request,
+                 [{:use_pkce, true} | @config]
+               )
 
       # Ensure that when the client supports PKCE it's being passed in correctly.
       %{pkce: :s256_only} =
-        application =
         application
         |> Changeset.change(pkce: :s256_only)
         |> Repo.update!()
 
-      assert Authorization.preauthorize(
-               resource_owner,
-               request,
-               @config
-             ) == {:ok, application, expected_scopes}
+      assert {:ok, %{app: %OauthApplication{id: ^app_id}, scopes: ^expected_scopes}} =
+               Authorization.preauthorize(
+                 resource_owner,
+                 request,
+                 @config
+               )
     end
 
     test "returns an error when there is something wrong w/ the challenge", %{
@@ -377,8 +436,19 @@ defmodule ExOauth2Provider.Authorization.CodeTest do
 
       access_grant = QueryHelpers.get_latest_inserted(OauthAccessGrant)
 
-      assert redirect_uri ==
-               "https://example.com/path?code=#{access_grant.token}&param=1&state=40612"
+      # Param order is not guaranteed. So check everything safely.
+      assert %URI{
+               host: "example.com",
+               path: "/path",
+               query: query,
+               scheme: "https"
+             } = URI.parse(redirect_uri)
+
+      assert URI.decode_query(query) == %{
+               "code" => access_grant.token,
+               "param" => "1",
+               "state" => "40612"
+             }
     end
 
     test "validates and stores PKCE data when enabled", %{resource_owner: resource_owner} do
@@ -450,43 +520,61 @@ defmodule ExOauth2Provider.Authorization.CodeTest do
     end
   end
 
-  test "#deny/3 error when no resource owner" do
-    assert Authorization.deny(nil, @valid_request, @config) ==
-             {:error, @invalid_request, :bad_request}
-  end
+  describe "#deny/3" do
+    test "returns access denied when the request is valid", %{resource_owner: resource_owner} do
+      assert Authorization.deny(resource_owner, @valid_request, @config) ==
+               {:error, @access_denied, :unauthorized}
+    end
 
-  test "#deny/3 error when invalid client", %{resource_owner: resource_owner} do
-    request = Map.merge(@valid_request, %{"client_id" => "invalid"})
+    test "returns error when no resource owner" do
+      assert Authorization.deny(nil, @valid_request, @config) ==
+               {:error, @invalid_request, :bad_request}
+    end
 
-    assert Authorization.deny(resource_owner, request, @config) ==
-             {:error, @invalid_client, :unprocessable_entity}
-  end
+    test "returns error when invalid client", %{resource_owner: resource_owner} do
+      request = Map.merge(@valid_request, %{"client_id" => "invalid"})
 
-  test "#deny/3 error when no client_id", %{resource_owner: resource_owner} do
-    request = Map.delete(@valid_request, "client_id")
+      assert Authorization.deny(resource_owner, request, @config) ==
+               {:error, @invalid_client, :unprocessable_entity}
+    end
 
-    assert Authorization.deny(resource_owner, request, @config) ==
-             {:error, @invalid_request, :bad_request}
-  end
+    test "returns error when no client_id", %{resource_owner: resource_owner} do
+      request = Map.delete(@valid_request, "client_id")
 
-  test "#deny/3", %{resource_owner: resource_owner} do
-    assert Authorization.deny(resource_owner, @valid_request, @config) ==
-             {:error, @access_denied, :unauthorized}
-  end
+      assert Authorization.deny(resource_owner, request, @config) ==
+               {:error, @invalid_request, :bad_request}
+    end
 
-  test "#deny/3 with redirection uri", %{application: application, resource_owner: resource_owner} do
-    QueryHelpers.change!(application,
-      redirect_uri: "#{application.redirect_uri}\nhttps://example.com/path"
-    )
+    test "returns a redirect when given a redirect URI", %{
+      application: application,
+      resource_owner: resource_owner
+    } do
+      QueryHelpers.change!(application,
+        redirect_uri: "#{application.redirect_uri}\nhttps://example.com/path"
+      )
 
-    request =
-      Map.merge(@valid_request, %{
-        "redirect_uri" => "https://example.com/path?param=1",
-        "state" => 40_612
-      })
+      request =
+        Map.merge(@valid_request, %{
+          "redirect_uri" => "https://example.com/path?param=1",
+          "state" => 40_612
+        })
 
-    assert Authorization.deny(resource_owner, request, @config) ==
-             {:redirect,
-              "https://example.com/path?error=access_denied&error_description=The+resource+owner+or+authorization+server+denied+the+request.&param=1&state=40612"}
+      {:redirect, uri} = assert Authorization.deny(resource_owner, request, @config)
+      # Param order is not guaranteed. So check everything safely.
+      assert %URI{
+               host: "example.com",
+               path: "/path",
+               query: query,
+               scheme: "https"
+             } = URI.parse(uri)
+
+      assert URI.decode_query(query) == %{
+               "error" => "access_denied",
+               "error_description" =>
+                 "The resource owner or authorization server denied the request.",
+               "param" => "1",
+               "state" => "40612"
+             }
+    end
   end
 end

@@ -10,8 +10,8 @@ defmodule ExOauth2Provider.AccessGrants.AccessGrantTest do
 
   describe "changeset/4" do
     test "returns a valid changeset with a token and the default app scope when the attrs are valid" do
-      app = Fixtures.application()
-      user = Fixtures.resource_owner()
+      app = Fixtures.insert(:application)
+      user = Fixtures.insert(:user)
 
       attrs = %{
         expires_in: 900,
@@ -35,8 +35,8 @@ defmodule ExOauth2Provider.AccessGrants.AccessGrantTest do
     end
 
     test "requires expires_in to be an integer" do
-      app = Fixtures.application()
-      user = Fixtures.resource_owner()
+      app = Fixtures.insert(:application)
+      user = Fixtures.insert(:user)
 
       attrs = %{
         expires_in: "900",
@@ -70,8 +70,8 @@ defmodule ExOauth2Provider.AccessGrants.AccessGrantTest do
     end
 
     test "requires redirect_uri to be a string" do
-      app = Fixtures.application()
-      user = Fixtures.resource_owner()
+      app = Fixtures.insert(:application)
+      user = Fixtures.insert(:user)
 
       attrs = %{
         expires_in: 900,
@@ -120,9 +120,8 @@ defmodule ExOauth2Provider.AccessGrants.AccessGrantTest do
     end
 
     test "requires token to be a unique string" do
-      app = Fixtures.application()
-      user = Fixtures.resource_owner()
-      grant = Fixtures.access_grant(app, user, "ima-token", "redirect-uri")
+      %{application: app, resource_owner: user} =
+        grant = Fixtures.insert(:access_grant, token: "ima-token", redirect_uri: "redirect-uri")
 
       attrs = %{
         expires_in: 900,
@@ -147,8 +146,8 @@ defmodule ExOauth2Provider.AccessGrants.AccessGrantTest do
     end
 
     test "accepts scopes and requires them to be permitted by the application" do
-      app = Fixtures.application()
-      user = Fixtures.resource_owner()
+      app = Fixtures.insert(:application)
+      user = Fixtures.insert(:user)
 
       attrs = %{
         expires_in: 900,
@@ -186,8 +185,8 @@ defmodule ExOauth2Provider.AccessGrants.AccessGrantTest do
 
   describe "changeset/2 when PKCE is required" do
     test "requires code_challenge and code_challenge_method when PKCE is required" do
-      app = Fixtures.application()
-      user = Fixtures.resource_owner()
+      app = Fixtures.insert(:application)
+      user = Fixtures.insert(:user)
 
       attrs = %{
         expires_in: 900,
@@ -210,8 +209,8 @@ defmodule ExOauth2Provider.AccessGrants.AccessGrantTest do
     end
 
     test "accepts all supported challenge methods" do
-      app = Fixtures.application()
-      user = Fixtures.resource_owner()
+      app = Fixtures.insert(:application)
+      user = Fixtures.insert(:user)
       challenge = PKCE.generate_code_challenge()
 
       for {method, query_param} <- [{:plain, "plain"}, {:s256, "S256"}] do
@@ -239,8 +238,8 @@ defmodule ExOauth2Provider.AccessGrants.AccessGrantTest do
     end
 
     test "rejects unsupported challenge methods" do
-      app = Fixtures.application()
-      user = Fixtures.resource_owner()
+      app = Fixtures.insert(:application)
+      user = Fixtures.insert(:user)
 
       attrs = %{
         code_challenge: PKCE.generate_code_challenge(),
@@ -262,6 +261,50 @@ defmodule ExOauth2Provider.AccessGrants.AccessGrantTest do
 
       refute Keyword.has_key?(errors, :code_challenge)
       assert {"is invalid", _} = errors[:code_challenge_method]
+    end
+
+    test "requires the open_id_nonce to be unique" do
+      challenge = PKCE.generate_code_challenge()
+
+      %{application: app} =
+        Fixtures.insert(
+          :access_grant,
+          code_challenge: challenge,
+          code_challenge_method: :s256
+        )
+
+      assert {:error, %Changeset{errors: errors}} =
+               :access_grant
+               |> Fixtures.build(code_challenge: nil)
+               |> AccessGrant.changeset(
+                 %{
+                   code_challenge: challenge,
+                   code_challenge_method: "S256"
+                 },
+                 app,
+                 opt_app: :ex_oauth2_provider,
+                 pkce: :all_methods
+               )
+               |> Repo.insert()
+
+      assert {"has already been taken", _} = errors[:code_challenge]
+    end
+
+    test "requires open_id_nonce to be unique" do
+      nonce = "nonce!"
+      %{application: app} = Fixtures.insert(:access_grant, open_id_nonce: nonce)
+
+      assert {:error, %Changeset{errors: errors}} =
+               :access_grant
+               |> Fixtures.build()
+               |> AccessGrant.changeset(
+                 %{open_id_nonce: nonce},
+                 app,
+                 opt_app: :ex_oauth2_provider
+               )
+               |> Repo.insert()
+
+      assert {"has already been taken", _} = errors[:open_id_nonce]
     end
   end
 end

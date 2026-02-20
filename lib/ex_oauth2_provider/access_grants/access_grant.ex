@@ -37,6 +37,7 @@ defmodule ExOauth2Provider.AccessGrants.AccessGrant do
       {:code_challenge, :string},
       {:code_challenge_method, Ecto.Enum, [values: [:plain, :s256]]},
       {:expires_in, :integer, null: false},
+      {:open_id_nonce, :string},
       {:redirect_uri, :string, null: false},
       {:revoked_at, :utc_datetime},
       {:scopes, :string},
@@ -52,9 +53,13 @@ defmodule ExOauth2Provider.AccessGrants.AccessGrant do
     ]
   end
 
+  def embeds, do: []
+
   @doc false
   def indexes() do
     [
+      {:code_challenge, true},
+      {:open_id_nonce, true},
       {:token, true}
     ]
   end
@@ -98,6 +103,8 @@ defmodule ExOauth2Provider.AccessGrants.AccessGrant do
     |> Scopes.put_scopes(grant.application.scopes, config)
     |> Scopes.validate_scopes(grant.application.scopes, config)
     |> Changeset.validate_required(required)
+    |> Changeset.unique_constraint(:code_challenge)
+    |> Changeset.unique_constraint(:open_id_nonce)
     |> Changeset.unique_constraint(:token)
   end
 
@@ -115,6 +122,7 @@ defmodule ExOauth2Provider.AccessGrants.AccessGrant do
   defp castable_attrs(application, config) do
     castable = [
       :expires_in,
+      :open_id_nonce,
       :redirect_uri,
       :scopes
     ]

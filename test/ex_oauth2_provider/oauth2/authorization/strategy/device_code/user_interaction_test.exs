@@ -9,13 +9,15 @@ defmodule ExOauth2Provider.Authorization.DeviceCode.UserInteractionTest do
 
   setup do
     application =
-      Fixtures.application(
+      Fixtures.insert(
+        :application,
         uid: "abc123",
         scopes: "app:read app:write"
       )
 
-    device_grant = Fixtures.device_grant(application_id: application.id)
-    owner = Fixtures.resource_owner()
+    device_grant = Fixtures.insert(:device_grant, application: application)
+
+    owner = Fixtures.insert(:user)
 
     {
       :ok,

@@ -1,15 +1,29 @@
 defmodule ExOauth2Provider.Authorization.Utils do
   @moduledoc false
 
-  alias ExOauth2Provider.{Authorization, Applications, Utils.Error}
+  alias ExOauth2Provider.{
+    Applications,
+    OpenId,
+    Utils.Error
+  }
+
   alias Ecto.Schema
+
+  # TODO: This should be a struct
+  @type context :: %{
+          required(:client) => map(),
+          required(:is_open_id) => boolean(),
+          required(:request) => map(),
+          required(:resource_owner) => map(),
+          optional(:access_token) => map()
+        }
 
   @doc false
   @spec prehandle_request(
           Schema.t() | nil,
           map(),
           keyword()
-        ) :: {:ok, Authorization.context()} | {:error, map()}
+        ) :: {:ok, context()} | {:error, map()}
   def prehandle_request(resource_owner, request, config, opts \\ []) do
     resource_owner
     |> new_params(request)
@@ -42,6 +56,14 @@ defmodule ExOauth2Provider.Authorization.Utils do
       |> Map.put("scope", nil)
       |> Map.merge(request)
 
-    {:ok, Map.put(params, :request, request)}
+    scope = Map.fetch!(request, "scope")
+
+    {
+      :ok,
+      Map.merge(
+        params,
+        %{is_open_id: OpenId.in_scope?(scope), request: request}
+      )
+    }
   end
 end

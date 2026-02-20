@@ -33,10 +33,15 @@ defmodule ExOauth2Provider.AuthorizationTest do
   @config [otp_app: :ex_oauth2_provider]
 
   setup do
-    user = Fixtures.resource_owner()
+    user = Fixtures.insert(:user)
 
     application =
-      Fixtures.application(resource_owner: user, uid: @client_id, secret: @client_secret)
+      Fixtures.insert(
+        :application,
+        owner: user,
+        uid: @client_id,
+        secret: @client_secret
+      )
 
     {:ok, %{resource_owner: user, application: application}}
   end
@@ -63,7 +68,10 @@ defmodule ExOauth2Provider.AuthorizationTest do
       application: %{id: app_id},
       resource_owner: owner
     } do
-      assert {:ok, %OauthApplication{id: ^app_id}, ~w[public read write]} =
+      assert {
+               :ok,
+               %{app: %OauthApplication{id: ^app_id}, scopes: ~w[public read write]}
+             } =
                Authorization.preauthorize(
                  owner,
                  @valid_request,
@@ -91,9 +99,22 @@ defmodule ExOauth2Provider.AuthorizationTest do
         |> Map.delete("response_type")
         |> Map.merge(%{"redirect_uri" => "https://example.com/path?param=1", "state" => 40_612})
 
-      assert Authorization.preauthorize(resource_owner, params, @config) ==
-               {:redirect,
-                "https://example.com/path?error=invalid_request&error_description=The+request+is+missing+a+required+parameter%2C+includes+an+unsupported+parameter+value%2C+or+is+otherwise+malformed.&param=1&state=40612"}
+      assert {:redirect, uri} = Authorization.preauthorize(resource_owner, params, @config)
+
+      assert %URI{
+               host: "example.com",
+               path: "/path",
+               query: query,
+               scheme: "https"
+             } = URI.parse(uri)
+
+      assert URI.decode_query(query) == %{
+               "error" => "invalid_request",
+               "error_description" =>
+                 "The request is missing a required parameter, includes an unsupported parameter value, or is otherwise malformed.",
+               "param" => "1",
+               "state" => "40612"
+             }
     end
 
     test "returns error when unsupported response type", %{resource_owner: resource_owner} do
@@ -116,9 +137,23 @@ defmodule ExOauth2Provider.AuthorizationTest do
         |> Map.merge(%{"response_type" => "invalid"})
         |> Map.merge(%{"redirect_uri" => "https://example.com/path?param=1", "state" => 40_612})
 
-      assert Authorization.preauthorize(resource_owner, params, @config) ==
-               {:redirect,
-                "https://example.com/path?error=unsupported_response_type&error_description=The+authorization+server+does+not+support+this+response+type.&param=1&state=40612"}
+      # Param order is not guaranteed. So check everything safely.
+      assert {:redirect, uri} = Authorization.preauthorize(resource_owner, params, @config)
+
+      assert %URI{
+               host: "example.com",
+               path: "/path",
+               query: query,
+               scheme: "https"
+             } = URI.parse(uri)
+
+      assert URI.decode_query(query) == %{
+               "error" => "unsupported_response_type",
+               "error_description" =>
+                 "The authorization server does not support this response type.",
+               "param" => "1",
+               "state" => "40612"
+             }
     end
 
     test "supports PKCE", %{application: %{id: app_id}, resource_owner: owner} do
@@ -134,7 +169,13 @@ defmodule ExOauth2Provider.AuthorizationTest do
           }
         )
 
-      assert {:ok, %OauthApplication{id: ^app_id}, ~w[public read write]} =
+      assert {
+               :ok,
+               %{
+                 app: %OauthApplication{id: ^app_id},
+                 scopes: ~w[public read write]
+               }
+             } =
                Authorization.preauthorize(owner, request, config)
 
       request =
@@ -148,6 +189,29 @@ defmodule ExOauth2Provider.AuthorizationTest do
 
       assert {:error, %{error: :invalid_request}, _bad_request} =
                Authorization.preauthorize(owner, request, config)
+    end
+
+    test "supports OpenID", %{resource_owner: owner} do
+      %{id: app_id, uid: client_id} =
+        Fixtures.insert(
+          :application,
+          scopes: "public read write openid"
+        )
+
+      request = Map.merge(@valid_request, %{"client_id" => client_id, "scope" => "openid"})
+
+      assert {
+               :ok,
+               %{
+                 app: %OauthApplication{id: ^app_id},
+                 scopes: ~w[openid]
+               }
+             } =
+               Authorization.preauthorize(
+                 owner,
+                 request,
+                 @config
+               )
     end
   end
 
@@ -173,6 +237,35 @@ defmodule ExOauth2Provider.AuthorizationTest do
           @valid_request,
           @config
         )
+    end
+
+    test "returns the state when present", %{resource_owner: owner} do
+      state = "42"
+      redirect_uri = "https://this-test.com/callback"
+
+      {
+        :native_redirect,
+        %{
+          code: _code,
+          state: ^state
+        }
+      } =
+        Authorization.authorize(
+          owner,
+          Map.put(@valid_request, "state", state),
+          @config
+        )
+
+      %{uid: app_uid} = Fixtures.insert(:application, redirect_uri: redirect_uri)
+
+      {:redirect, uri} =
+        Authorization.authorize(
+          owner,
+          Map.merge(@valid_request, %{"client_id" => app_uid, "state" => state}),
+          @config
+        )
+
+      assert String.ends_with?(uri, "&state=#{state}")
     end
 
     test "supports the PKCE option", %{resource_owner: owner} do
@@ -202,12 +295,28 @@ defmodule ExOauth2Provider.AuthorizationTest do
       {:error, %{error: :invalid_request}, _bad_request} =
         Authorization.authorize(owner, request, config)
     end
+
+    test "supports OpenID", %{resource_owner: owner} do
+      %{uid: client_id} =
+        Fixtures.insert(
+          :application,
+          scopes: "public read write openid"
+        )
+
+      request = Map.merge(@valid_request, %{"client_id" => client_id, "scope" => "openid"})
+
+      assert {:native_redirect, %{code: _code}} =
+               Authorization.authorize(
+                 owner,
+                 request,
+                 @config
+               )
+    end
   end
 
   describe "authorize_device/3" do
-    test "returns an :ok tuple with the user code", context do
-      %{application: application, resource_owner: resource_owner} = context
-      grant = Fixtures.device_grant(application: application)
+    test "returns an :ok tuple with the user code" do
+      %{resource_owner: resource_owner} = grant = Fixtures.insert(:device_grant)
 
       response =
         resource_owner
@@ -266,6 +375,27 @@ defmodule ExOauth2Provider.AuthorizationTest do
 
       assert Authorization.deny(resource_owner, request, config) ==
                {:error, @invalid_request, :bad_request}
+    end
+
+    test "supports OpenID", %{resource_owner: owner} do
+      %{uid: client_id} =
+        Fixtures.insert(
+          :application,
+          scopes: "public read write openid"
+        )
+
+      request = Map.merge(@valid_request, %{"client_id" => client_id, "scope" => "openid"})
+
+      assert Authorization.deny(owner, request, @config) ==
+               {:error, @access_denied, :unauthorized}
+
+      request = Map.merge(@valid_request, %{"client_id" => client_id, "scope" => "test-fail"})
+
+      assert {
+               :error,
+               %{error: :invalid_scope},
+               :unprocessable_entity
+             } = Authorization.deny(owner, request, @config)
     end
   end
 end

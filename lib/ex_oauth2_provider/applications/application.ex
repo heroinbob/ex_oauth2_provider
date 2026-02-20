@@ -47,7 +47,7 @@ defmodule ExOauth2Provider.Applications.Application do
   @doc """
   Returns a list of the supported PKCE settings for an app.
   """
-  @spec pkce_settings() :: pkce_setting()
+  @spec pkce_settings() :: [pkce_setting()]
   def pkce_settings, do: @supported_pkce_settings
 
   @doc false
@@ -55,6 +55,7 @@ defmodule ExOauth2Provider.Applications.Application do
     [
       {:is_trusted, :boolean, default: false, null: false},
       {:name, :string},
+      {:open_id_post_logout_redirect_uri, :string},
       {
         :pkce,
         Ecto.Enum,
@@ -69,6 +70,11 @@ defmodule ExOauth2Provider.Applications.Application do
       {:secret, :string, default: ""},
       {:uid, :string}
     ]
+  end
+
+  @doc false
+  def embeds do
+    []
   end
 
   @doc false

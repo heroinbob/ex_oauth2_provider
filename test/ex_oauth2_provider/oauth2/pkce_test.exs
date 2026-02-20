@@ -1,19 +1,13 @@
 defmodule ExOauth2Provider.PKCETest do
+  # No async - these tests perform config changes
   use ExUnit.Case, async: true
+  use ExOauth2Provider.Test.ConfigChanges
 
   alias Dummy.OauthApplications.OauthApplication
   alias ExOauth2Provider.PKCE
   alias ExOauth2Provider.Test
 
   describe "required?/2" do
-    setup do
-      config = Application.get_env(:ex_oauth2_provider, ExOauth2Provider)
-
-      on_exit(fn ->
-        Application.put_env(:ex_oauth2_provider, ExOauth2Provider, config)
-      end)
-    end
-
     test "returns true when the app setting is in an enabled state" do
       context =
         Test.Fixtures.authorization_request_context(client: %OauthApplication{pkce: :all_methods})

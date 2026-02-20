@@ -8,18 +8,10 @@ defmodule ExOauth2Provider.DeviceGrantsTest do
 
   @config [otp_app: :ex_oauth2_provider]
 
-  setup do
-    application = Fixtures.application()
-
-    {:ok, %{application: application}}
-  end
-
   describe "#authorize/3" do
-    test "updates the given grant and returns the result tuple", context do
-      %{application: application} = context
-
-      grant = Fixtures.device_grant(application: application)
-      user = Fixtures.resource_owner()
+    test "updates the given grant and returns the result tuple" do
+      grant = Fixtures.insert(:device_grant)
+      user = Fixtures.insert(:user)
 
       {:ok, updated_grant} = DeviceGrants.authorize(grant, user, @config)
 
@@ -28,10 +20,8 @@ defmodule ExOauth2Provider.DeviceGrantsTest do
       assert updated_grant.user_code == nil
     end
 
-    test "returns an error tuple when the changeset is invalid", context do
-      %{application: application} = context
-
-      grant = Fixtures.device_grant(application: application)
+    test "returns an error tuple when the changeset is invalid" do
+      grant = Fixtures.insert(:device_grant)
       user = %User{id: "abc"}
 
       {:error, _changeset} = DeviceGrants.authorize(grant, user, @config)
@@ -53,8 +43,8 @@ defmodule ExOauth2Provider.DeviceGrantsTest do
   end
 
   describe "#create_grant/3" do
-    test "inserts a new record and returns the result tuple", context do
-      %{application: application} = context
+    test "inserts a new record and returns the result tuple" do
+      application = Fixtures.insert(:application)
 
       attrs = %{
         "device_code" => "dc",
@@ -73,7 +63,9 @@ defmodule ExOauth2Provider.DeviceGrantsTest do
       assert grant.user_code == "uc"
     end
 
-    test "accepts valid scopes", %{application: application} do
+    test "accepts valid scopes" do
+      application = Fixtures.insert(:application)
+
       attrs = %{
         "device_code" => "dc",
         "expires_in" => 10,
@@ -86,17 +78,15 @@ defmodule ExOauth2Provider.DeviceGrantsTest do
       assert grant.scopes == "read"
     end
 
-    test "returns an error tuple when the changeset is invalid", context do
-      %{application: application} = context
+    test "returns an error tuple when the changeset is invalid" do
+      application = Fixtures.insert(:application)
       {:error, _changeset} = DeviceGrants.create_grant(application, %{}, @config)
     end
   end
 
   describe "#delete_expired/1" do
-    test "deletes all expired grants and returns the result tuple", context do
-      %{application: application} = context
-
-      grant = Fixtures.device_grant(application: application)
+    test "deletes all expired grants and returns the result tuple" do
+      grant = Fixtures.insert(:device_grant)
 
       inserted_at =
         QueryHelpers.timestamp(
@@ -113,8 +103,8 @@ defmodule ExOauth2Provider.DeviceGrantsTest do
   end
 
   describe "#delete!/1" do
-    test "deletes the grant and returns it", %{application: application} do
-      grant = Fixtures.device_grant(application: application)
+    test "deletes the grant and returns it" do
+      grant = Fixtures.insert(:device_grant)
 
       deleted_grant = DeviceGrants.delete!(grant, @config)
 
@@ -130,12 +120,12 @@ defmodule ExOauth2Provider.DeviceGrantsTest do
   end
 
   describe "#find_by_application_and_device_code/3" do
-    test "returns the matching DeviceGrant", %{application: application} do
-      grant = Fixtures.device_grant(application: application)
+    test "returns the matching DeviceGrant" do
+      grant = Fixtures.insert(:device_grant)
 
       found_grant =
         DeviceGrants.find_by_application_and_device_code(
-          application,
+          grant.application,
           grant.device_code,
           @config
         )
@@ -143,7 +133,9 @@ defmodule ExOauth2Provider.DeviceGrantsTest do
       assert grant.id == found_grant.id
     end
 
-    test "returns the nil when no matching grant exists", %{application: application} do
+    test "returns the nil when no matching grant exists" do
+      application = Fixtures.insert(:application)
+
       result =
         DeviceGrants.find_by_application_and_device_code(
           application,
@@ -156,8 +148,8 @@ defmodule ExOauth2Provider.DeviceGrantsTest do
   end
 
   describe "#find_by_user_code/2" do
-    test "returns the grant matching the user code", %{application: application} do
-      grant = Fixtures.device_grant(application: application)
+    test "returns the grant matching the user code" do
+      grant = Fixtures.insert(:device_grant)
 
       found_grant = DeviceGrants.find_by_user_code(grant.user_code, @config)
 
@@ -172,9 +164,8 @@ defmodule ExOauth2Provider.DeviceGrantsTest do
   end
 
   describe "#update_last_polled_at!/2" do
-    test "updates last polled at timestamp and returns the updated schema", context do
-      %{application: application} = context
-      grant = Fixtures.device_grant(application: application)
+    test "updates last polled at timestamp and returns the updated schema" do
+      grant = Fixtures.insert(:device_grant)
       assert grant.last_polled_at == nil
 
       grant = DeviceGrants.update_last_polled_at!(grant, @config)
@@ -182,12 +173,10 @@ defmodule ExOauth2Provider.DeviceGrantsTest do
       refute grant.last_polled_at == nil
     end
 
-    test "raises an error when the changeset is invalid", context do
-      %{application: application} = context
-
+    test "raises an error when the changeset is invalid" do
       grant =
-        [application: application]
-        |> Fixtures.device_grant()
+        :device_grant
+        |> Fixtures.insert()
         |> DeviceGrants.delete!(@config)
 
       assert_raise Ecto.StaleEntryError, fn ->

@@ -1,7 +1,12 @@
 defmodule ExOauth2Provider.Token.Strategy.RevokeTest do
   use ExOauth2Provider.TestCase
 
-  alias ExOauth2Provider.{AccessTokens, Token}
+  alias ExOauth2Provider.{
+    AccessTokens,
+    Token,
+    Utils
+  }
+
   alias ExOauth2Provider.Test.{Fixtures, QueryHelpers}
   alias Dummy.OauthAccessTokens.OauthAccessToken
 
@@ -14,21 +19,21 @@ defmodule ExOauth2Provider.Token.Strategy.RevokeTest do
   }
 
   setup do
-    user = Fixtures.resource_owner()
-
-    application =
-      Fixtures.application(
-        resource_owner: user,
+    %{owner: user} =
+      application =
+      Fixtures.insert(
+        :application,
         uid: @client_id,
         secret: @client_secret,
         scopes: "app:read app:write"
       )
 
     access_token =
-      Fixtures.access_token(
-        resource_owner: user,
+      Fixtures.insert(
+        :access_token,
         application: application,
-        use_refresh_token: true,
+        refresh_token: Utils.generate_token(),
+        resource_owner: user,
         scopes: "app:read"
       )
 
@@ -73,7 +78,13 @@ defmodule ExOauth2Provider.Token.Strategy.RevokeTest do
     valid_request: valid_request,
     access_token: access_token
   } do
-    new_application = Fixtures.application(uid: "new_app", secret: "new")
+    new_application =
+      Fixtures.insert(
+        :application,
+        uid: "new_app",
+        secret: "new"
+      )
+
     QueryHelpers.change!(access_token, application_id: new_application.id)
 
     assert Token.revoke(valid_request, otp_app: :ex_oauth2_provider) == {:ok, %{}}

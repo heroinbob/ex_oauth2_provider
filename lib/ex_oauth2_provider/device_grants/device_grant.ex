@@ -39,6 +39,8 @@ defmodule ExOauth2Provider.DeviceGrants.DeviceGrant do
     ]
   end
 
+  def embeds, do: []
+
   @doc false
   def indexes() do
     [

@@ -14,10 +14,6 @@ defmodule ExOauth2Provider.Behaviours.SkipAuthorization do
   end
   """
   alias ExOauth2Provider.Applications.Application
-  alias ExOauth2Provider.Schema
 
-  @callback skip_authorization?(
-              user :: Schema.t(),
-              application :: Application.t()
-            ) :: boolean()
+  @callback skip_authorization?(user :: map(), application :: Application.t()) :: boolean()
 end

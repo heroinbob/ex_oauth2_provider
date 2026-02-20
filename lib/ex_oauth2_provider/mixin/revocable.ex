@@ -5,6 +5,8 @@ defmodule ExOauth2Provider.Mixin.Revocable do
   alias ExOauth2Provider.Config
   alias ExOauth2Provider.Schema, as: SchemaHelpers
 
+  defdelegate repo(config), to: Config
+
   @doc """
   Revoke data.
 
@@ -22,7 +24,7 @@ defmodule ExOauth2Provider.Mixin.Revocable do
     |> revoke_query()
     |> case do
       nil -> {:ok, data}
-      query -> Config.repo(config).update(query)
+      query -> repo(config).update(query)
     end
   end
 
@@ -35,13 +37,14 @@ defmodule ExOauth2Provider.Mixin.Revocable do
     |> revoke_query()
     |> case do
       nil -> data
-      query -> Config.repo(config).update!(query)
+      query -> repo(config).update!(query)
     end
   end
 
   defp revoke_query(%struct{revoked_at: nil} = data) do
     Changeset.change(data, revoked_at: SchemaHelpers.__timestamp_for__(struct, :revoked_at))
   end
+
   defp revoke_query(_data), do: nil
 
   @doc """
@@ -58,7 +61,7 @@ defmodule ExOauth2Provider.Mixin.Revocable do
   @spec filter_revoked(Schema.t()) :: Schema.t() | nil
   def filter_revoked(data) do
     case is_revoked?(data) do
-      true  -> nil
+      true -> nil
       false -> data
     end
   end

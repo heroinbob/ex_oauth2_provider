@@ -257,6 +257,14 @@ defmodule ExOauth2Provider.Config do
   @spec use_pkce?(keyword()) :: boolean()
   def use_pkce?(config), do: pkce_setting(config) in @enabled_pkce_settings
 
+  @doc """
+  Return the config map for OpenID. Default is an empty map.
+  """
+  @spec open_id_config(config :: keyword()) :: map()
+  def open_id_config(config) do
+    get(config, :open_id, %{})
+  end
+
   defp get(config, key, value \\ nil) do
     otp_app = Keyword.get(config, :otp_app)
 

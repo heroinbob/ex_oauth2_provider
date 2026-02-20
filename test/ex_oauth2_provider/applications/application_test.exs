@@ -6,6 +6,28 @@ defmodule ExOauth2Provider.Applications.ApplicationTest do
   alias Dummy.OauthApplications.OauthApplication
   alias Dummy.Repo
 
+  describe "changeset/2" do
+    test "accepts valid attrs and has expected defaults" do
+      user = Fixtures.build(:user)
+
+      params = %{
+        name: "Test App",
+        owner: user,
+        redirect_uri: "https://test.com"
+      }
+
+      assert {:ok, app} =
+               %OauthApplication{}
+               |> Application.changeset(params)
+               |> Ecto.Changeset.apply_action(:validate)
+
+      assert app.pkce == :disabled
+      assert app.scopes == "public"
+      assert app.secret =~ ~r/^[a-z0-9]+$/
+      assert app.uid =~ ~r/^[a-z0-9]+$/
+    end
+  end
+
   describe "changeset/2 with existing application" do
     setup do
       application = Ecto.put_meta(%OauthApplication{}, state: :loaded)
@@ -81,7 +103,8 @@ defmodule ExOauth2Provider.Applications.ApplicationTest do
 
     test "allows is_trusted to be changed" do
       app =
-        Fixtures.application()
+        :application
+        |> Fixtures.insert()
         |> Application.changeset(%{is_trusted: true})
         |> Repo.update!()
 

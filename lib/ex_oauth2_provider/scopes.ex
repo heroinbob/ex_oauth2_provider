@@ -10,7 +10,7 @@ defmodule ExOauth2Provider.Scopes do
   """
   @spec all?([binary()], [binary()]) :: boolean()
   def all?(scopes, required_scopes) do
-    (required_scopes -- scopes) == []
+    required_scopes -- scopes == []
   end
 
   @doc """
@@ -32,6 +32,30 @@ defmodule ExOauth2Provider.Scopes do
   end
 
   @doc """
+  Return the scopes for the given source. This does not provide the default
+  server scopes if you provide a client.
+  """
+  @spec from(source :: map()) :: [String.t()]
+  def from(%{scopes: scopes}), do: to_list(scopes)
+
+  def from(%{scope: scopes}), do: to_list(scopes)
+
+  def from(%{"scope" => scopes} = _request), do: to_list(scopes)
+
+  def from(_source), do: []
+
+  @doc """
+  Return the scopes for the given client. If no scopes are explicitly
+  defined then the defaults from the config are returned.
+  """
+  @spec from(client :: map()) :: [String.t()]
+  def from(%{scopes: scopes, secret: _, uid: _}, config) do
+    scopes
+    |> to_list()
+    |> default_to_server_scopes(config)
+  end
+
+  @doc """
   Will default to server scopes if no scopes supplied
   """
   @spec default_to_server_scopes([binary()], keyword()) :: [binary()]
@@ -39,17 +63,12 @@ defmodule ExOauth2Provider.Scopes do
   def default_to_server_scopes(server_scopes, _config), do: server_scopes
 
   @doc """
-  Fetch scopes from an access token
+  Convert scopes string to list. Any unsupported value will result in
+  an empty list.
   """
-  @spec from_access_token(map()) :: [binary()]
-  def from_access_token(access_token), do: to_list(access_token.scopes)
-
-  @doc """
-  Convert scopes string to list
-  """
-  @spec to_list(binary()) :: [binary()]
-  def to_list(nil), do: []
-  def to_list(str), do: String.split(str)
+  @spec to_list(any()) :: [binary()]
+  def to_list(str) when is_binary(str), do: String.split(str)
+  def to_list(_), do: []
 
   @doc """
   Convert scopes list to string

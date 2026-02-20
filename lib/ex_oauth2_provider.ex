@@ -36,7 +36,15 @@ defmodule ExOauth2Provider do
 
   @behaviour ExOauth2Provider.Behaviours.TokenAuthentication
 
-  alias ExOauth2Provider.{Config, AccessTokens}
+  alias ExOauth2Provider.{
+    AccessTokens,
+    Config,
+    OpenId
+  }
+
+  defdelegate get_openid_config(config), to: OpenId, as: :get_config
+  defdelegate get_openid_public_signing_key(config), to: OpenId, as: :get_public_key
+  defdelegate list_openid_claims(config), to: OpenId, as: :list_claims
 
   @doc """
   Authenticate an access token.
@@ -101,5 +109,12 @@ defmodule ExOauth2Provider do
     access_token = repo.preload(access_token, :resource_owner)
 
     {:ok, access_token}
+  end
+
+  @doc """
+  TODO
+  """
+  def end_session(%{"id_token_hint" => _, "user_id" => _} = request_params, config) do
+    OpenId.end_session(request_params, config)
   end
 end

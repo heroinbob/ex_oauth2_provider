@@ -6,7 +6,8 @@ defmodule ExOauth2Provider.PKCE do
     Authorization,
     Config,
     PKCE.CodeChallenge,
-    PKCE.CodeVerifier
+    PKCE.CodeVerifier,
+    Token.AuthorizationCode
   }
 
   @settings [
@@ -34,10 +35,12 @@ defmodule ExOauth2Provider.PKCE do
 
   @type client :: %{pkce: setting()}
 
+  @type context :: Authorization.context() | AuthorizationCode.context()
+
   @doc """
   Returns a list of the supported PKCE settings.
   """
-  @spec settings() :: setting()
+  @spec settings() :: [setting()]
   def settings, do: @settings
 
   @doc """
@@ -59,7 +62,7 @@ defmodule ExOauth2Provider.PKCE do
   - `:otp_app` - If the client PKCE setting is disabled then this is used to determine if the
                 otp app's config has PKCE enabled.
   """
-  @spec required?(context :: Authorization.context() | client(), config :: list()) :: boolean()
+  @spec required?(context :: context() | client(), config :: list()) :: boolean()
   def required?(%{client: client} = _context, config) do
     determine_pkce_setting(client, config) in @enabled_settings
   end
@@ -73,7 +76,7 @@ defmodule ExOauth2Provider.PKCE do
   when PKCE is configured as `:disabled`. Be sure to call `required?/1` to verify PKCE
   is enabled prior to calling this function.
   """
-  @spec valid?(context :: Authorization.context(), config :: list()) :: boolean()
+  @spec valid?(context :: context(), config :: list()) :: boolean()
   def valid?(
         %{
           request: %{"code_challenge" => challenge} = request

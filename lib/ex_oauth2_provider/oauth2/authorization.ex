@@ -11,12 +11,7 @@ defmodule ExOauth2Provider.Authorization do
 
   alias Ecto.Schema
 
-  # TODO: This should be a struct
-  @type context :: %{
-          client: map(),
-          request: map(),
-          resource_owner: map()
-        }
+  @type context :: Utils.context()
 
   @mod_lookup %{
     "authorization_code" => ExOauth2Provider.Authorization.Code,
